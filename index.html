@@ -81,12 +81,21 @@ It was great having you in worship with us today. I look forward to getting to k
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
 
+// Convert Google Sheet URL to CSV export URL
 function csvUrl(url) {
   const gid = url.match(/gid=(\d+)/)?.[1];
   return url.replace(/\/edit.*$/, `/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ""}`);
 }
 
-/* REAL CSV PARSER */
+// Format phone number (10-digit)
+function formatPhone(phone) {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length === 10
+    ? `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`
+    : phone;
+}
+
+// Robust CSV parser (handles quotes)
 function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -99,23 +108,21 @@ function parseCsv(text) {
     } else if (char === ',' && !inQuotes) {
       row.push(cell);
       cell = "";
-    } else if (char === '\n' && !inQuotes) {
-      row.push(cell);
-      rows.push(row);
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (cell || row.length) row.push(cell);
+      if (row.length) rows.push(row);
       row = [];
       cell = "";
     } else {
       cell += char;
     }
   }
-  if (cell) {
-    row.push(cell);
-    rows.push(row);
-  }
+  if (cell) row.push(cell);
+  if (row.length) rows.push(row);
   return rows;
 }
 
-/* ANDROID-TOLERANT DATE PARSER */
+// Android-style date parser: "M/d/yyyy HH:mm:ss" + optional AM/PM
 function parseSheetDate(str) {
   if (!str) return null;
 
@@ -144,37 +151,49 @@ async function loadVisitors() {
     return;
   }
 
-  const response = await fetch(csvUrl(SHEET_URL));
-  const text = await response.text();
+  let response;
+  try {
+    response = await fetch(csvUrl(SHEET_URL));
+  } catch (e) {
+    list.innerHTML = "Failed to fetch CSV. Make sure the sheet is public.";
+    debug.textContent = e;
+    return;
+  }
 
+  const text = await response.text();
   const rows = parseCsv(text);
   debug.textContent += `Rows loaded: ${rows.length}\n`;
-  debug.textContent += `Header: ${rows[0].join(" | ")}\n\n`;
+  debug.textContent += `Header: ${rows[0].map(c=>c.trim()).join(" | ")}\n\n`;
 
   const selected = new Date(dateValue);
-  const start = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 0,0,0);
-  const end = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 23,59,59);
+  const start = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 0,0,0,0);
+  const end = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 23,59,59,999);
 
   list.innerHTML = "";
 
   rows.slice(1).forEach((cols, i) => {
-    const visitDate = parseSheetDate(cols[0]);
-    debug.textContent += `Row ${i+1} raw date: "${cols[0]}" → ${visitDate}\n`;
+    if (cols.length < 6) return;
 
+    const visitDate = parseSheetDate(cols[0]?.trim());
+    debug.textContent += `Row ${i+1} raw date: "${cols[0]}" → ${visitDate}\n`;
     if (!visitDate) return;
     if (visitDate < start || visitDate > end) return;
 
-    const smsEnabled = cols[4]?.toLowerCase() !== "no";
+    const first = cols[1]?.trim();
+    const last = cols[2]?.trim();
+    const phone = cols[3]?.trim();
+    const textYes = cols[4]?.trim();
+    const smsEnabled = textYes.toLowerCase() !== "no";
 
     const div = document.createElement("div");
     div.className = "visitor";
     div.innerHTML = `
       <div>
-        <strong>${cols[1]} ${cols[2]}</strong><br>
-        ${cols[3]}
+        <strong>${first} ${last}</strong><br>
+        ${formatPhone(phone)}
       </div>
       <button class="${smsEnabled ? "sms-enabled" : "sms-disabled"}"
-        ${smsEnabled ? "" : "disabled"}>
+        ${smsEnabled ? `onclick="sendSms('${phone}','${first}','${document.getElementById('greeting').value}','${document.getElementById('message').value}')" ` : "disabled"}>
         Send SMS
       </button>
     `;
@@ -184,6 +203,12 @@ async function loadVisitors() {
   if (!list.children.length) {
     list.innerHTML = "No visitors found for this date";
   }
+}
+
+// Open SMS app (mobile)
+function sendSms(phone, first, greeting, message) {
+  const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
+  window.location.href = `sms:${phone}?body=${body}`;
 }
 </script>
 
