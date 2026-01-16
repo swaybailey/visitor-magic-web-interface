@@ -29,10 +29,6 @@ input, textarea, button {
   font-size: 16px;
 }
 
-button {
-  cursor: pointer;
-}
-
 .visitor {
   background: white;
   padding: 12px;
@@ -50,13 +46,8 @@ button {
   color: white;
 }
 
-.sms-enabled {
-  background: #47b80f;
-}
-
-.sms-disabled {
-  background: #d32f2f;
-}
+.sms-enabled { background: #47b80f; }
+.sms-disabled { background: #d32f2f; }
 </style>
 </head>
 
@@ -90,14 +81,9 @@ const SHEET_URL =
 /* ================================================== */
 
 function convertToCsvUrl(url) {
-  if (url.includes("/edit")) {
-    if (url.includes("gid=")) {
-      const gid = url.match(/gid=(\d+)/)[1];
-      return url.replace(/\/edit.*$/, `/gviz/tq?tqx=out:csv&gid=${gid}`);
-    }
-    return url.replace(/\/edit.*$/, "/gviz/tq?tqx=out:csv");
-  }
-  return url;
+  const gidMatch = url.match(/gid=(\d+)/);
+  const gid = gidMatch ? gidMatch[1] : "";
+  return url.replace(/\/edit.*$/, `/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ""}`);
 }
 
 function formatPhone(phone) {
@@ -107,74 +93,6 @@ function formatPhone(phone) {
     : phone;
 }
 
-async function loadVisitors() {
-  const list = document.getElementById("visitorList");
-  list.innerHTML = "Loading...";
-
-  const dateValue = document.getElementById("datePicker").value;
-  if (!dateValue) {
-    list.innerHTML = "Please select a date";
-    return;
-  }
-
-  const greeting = document.getElementById("greeting").value;
-  const message = document.getElementById("message").value;
-
-  const csvUrl = convertToCsvUrl(SHEET_URL);
-  const res = await fetch(csvUrl);
-  const text = await res.text();
-
-  const rows = text.trim().split("\n").slice(1);
-  list.innerHTML = "";
-
-  const selectedDate = new Date(dateValue);
-  selectedDate.setHours(0,0,0,0);
-
-  rows.forEach(row => {
-    const cols = row.replace(/"/g,"").split(",");
-    if (cols.length < 6) return;
-
-    const visitDate = new Date(cols[0]);
-    visitDate.setHours(0,0,0,0);
-
-    if (visitDate.getTime() !== selectedDate.getTime()) return;
-
-    const first = cols[1];
-    const last = cols[2];
-    const phone = cols[3];
-    const textYes = cols[4];
-
-    const smsEnabled = textYes.toLowerCase() !== "no";
-
-    const div = document.createElement("div");
-    div.className = "visitor";
-
-    div.innerHTML = `
-      <div>
-        <div><strong>${first} ${last}</strong></div>
-        <div>${formatPhone(phone)}</div>
-      </div>
-      <button class="sms-btn ${smsEnabled ? "sms-enabled" : "sms-disabled"}"
-        ${smsEnabled ? "" : "disabled"}
-        onclick="sendSms('${phone}','${first}','${greeting}','${message}')">
-        Send SMS
-      </button>
-    `;
-
-    list.appendChild(div);
-  });
-
-  if (!list.children.length) {
-    list.innerHTML = "No visitors found";
-  }
-}
-
-function sendSms(phone, first, greeting, message) {
-  const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
-  window.location.href = `sms:${phone}?body=${body}`;
-}
-</script>
-
-</body>
-</html>
-
+/**
+ * ANDROID-EQUIVALENT DATE PARSER
+ * Parses "M/d/yyy*
