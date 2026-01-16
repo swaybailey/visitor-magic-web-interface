@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Visitor Magic</title>
+
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  padding: 16px;
+  background: #f5f5f5;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.controls {
+  margin-bottom: 16px;
+}
+
+input, textarea, button {
+  width: 100%;
+  padding: 8px;
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.visitor {
+  background: white;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sms-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  color: white;
+}
+
+.sms-enabled {
+  background: #47b80f;
+}
+
+.sms-disabled {
+  background: #d32f2f;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Visitor Magic</h1>
+
+<div class="controls">
+  <label>Date</label>
+  <input type="date" id="datePicker">
+
+  <label>Greeting</label>
+  <input type="text" id="greeting" value="Hey">
+
+  <label>Message</label>
+  <textarea id="message" rows="4">
+It was great having you in worship with us today. I look forward to getting to know you.
+  </textarea>
+
+  <button onclick="loadVisitors()">Load Visitors</button>
+</div>
+
+<div id="visitorList"></div>
+
+<script>
+/* ================= HARDCODED SHEET ================= */
+
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
+
+/* ================================================== */
+
+function convertToCsvUrl(url) {
+  if (url.includes("/edit")) {
+    if (url.includes("gid=")) {
+      const gid = url.match(/gid=(\d+)/)[1];
+      return url.replace(/\/edit.*$/, `/gviz/tq?tqx=out:csv&gid=${gid}`);
+    }
+    return url.replace(/\/edit.*$/, "/gviz/tq?tqx=out:csv");
+  }
+  return url;
+}
+
+function formatPhone(phone) {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length === 10
+    ? `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`
+    : phone;
+}
+
+async function loadVisitors() {
+  const list = document.getElementById("visitorList");
+  list.innerHTML = "Loading...";
+
+  const dateValue = document.getElementById("datePicker").value;
+  if (!dateValue) {
+    list.innerHTML = "Please select a date";
+    return;
+  }
+
+  const greeting = document.getElementById("greeting").value;
+  const message = document.getElementById("message").value;
+
+  const csvUrl = convertToCsvUrl(SHEET_URL);
+  const res = await fetch(csvUrl);
+  const text = await res.text();
+
+  const rows = text.trim().split("\n").slice(1);
+  list.innerHTML = "";
+
+  const selectedDate = new Date(dateValue);
+  selectedDate.setHours(0,0,0,0);
+
+  rows.forEach(row => {
+    const cols = row.replace(/"/g,"").split(",");
+    if (cols.length < 6) return;
+
+    const visitDate = new Date(cols[0]);
+    visitDate.setHours(0,0,0,0);
+
+    if (visitDate.getTime() !== selectedDate.getTime()) return;
+
+    const first = cols[1];
+    const last = cols[2];
+    const phone = cols[3];
+    const textYes = cols[4];
+
+    const smsEnabled = textYes.toLowerCase() !== "no";
+
+    const div = document.createElement("div");
+    div.className = "visitor";
+
+    div.innerHTML = `
+      <div>
+        <div><strong>${first} ${last}</strong></div>
+        <div>${formatPhone(phone)}</div>
+      </div>
+      <button class="sms-btn ${smsEnabled ? "sms-enabled" : "sms-disabled"}"
+        ${smsEnabled ? "" : "disabled"}
+        onclick="sendSms('${phone}','${first}','${greeting}','${message}')">
+        Send SMS
+      </button>
+    `;
+
+    list.appendChild(div);
+  });
+
+  if (!list.children.length) {
+    list.innerHTML = "No visitors found";
+  }
+}
+
+function sendSms(phone, first, greeting, message) {
+  const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
+  window.location.href = `sms:${phone}?body=${body}`;
+}
+</script>
+
+</body>
+</html>
