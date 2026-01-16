@@ -15,7 +15,6 @@ body {
 
 h1 {
   text-align: center;
-  margin-bottom: 16px;
 }
 
 .controls {
@@ -39,21 +38,24 @@ input, textarea, button {
   align-items: center;
 }
 
-.sms-btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
-  color: white;
-}
+.sms-enabled { background: #47b80f; color: white; }
+.sms-disabled { background: #d32f2f; color: white; }
 
-.sms-enabled { background: #47b80f; }
-.sms-disabled { background: #d32f2f; }
+.debug {
+  background: #000;
+  color: #0f0;
+  padding: 8px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow: auto;
+}
 </style>
 </head>
 
 <body>
 
-<h1>Visitor Magic 1</h1>
+<h1>Visitor Magic</h1>
 
 <div class="controls">
   <label>Date</label>
@@ -72,128 +74,116 @@ It was great having you in worship with us today. I look forward to getting to k
 
 <div id="visitorList"></div>
 
-<script>
-/* ================= HARDCODED SHEET ================= */
+<h3>Debug Output</h3>
+<div id="debug" class="debug"></div>
 
+<script>
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
 
-/* ================================================== */
-
-function convertToCsvUrl(url) {
-  const gidMatch = url.match(/gid=(\d+)/);
-  const gid = gidMatch ? gidMatch[1] : "";
+function csvUrl(url) {
+  const gid = url.match(/gid=(\d+)/)?.[1];
   return url.replace(/\/edit.*$/, `/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ""}`);
 }
 
-function formatPhone(phone) {
-  const digits = phone.replace(/\D/g, "");
-  return digits.length === 10
-    ? `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`
-    : phone;
+/* REAL CSV PARSER */
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let char of text) {
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      row.push(cell);
+      cell = "";
+    } else if (char === '\n' && !inQuotes) {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  if (cell) {
+    row.push(cell);
+    rows.push(row);
+  }
+  return rows;
 }
 
-/**
- * ANDROID-EQUIVALENT DATE PARSER
- * Parses "M/d/yyyy HH:mm:ss"
- */
-function parseSheetDate(dateTimeStr) {
-  if (!dateTimeStr) return null;
+/* ANDROID-TOLERANT DATE PARSER */
+function parseSheetDate(str) {
+  if (!str) return null;
 
-  const [datePart, timePart] = dateTimeStr.split(" ");
-  if (!datePart || !timePart) return null;
+  const match = str.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})(?: (AM|PM))?$/
+  );
+  if (!match) return null;
 
-  const [month, day, year] = datePart.split("/").map(Number);
-  const [hour, minute, second] = timePart.split(":").map(Number);
+  let [, m, d, y, h, min, s, ap] = match;
+  h = parseInt(h);
+  if (ap === "PM" && h < 12) h += 12;
+  if (ap === "AM" && h === 12) h = 0;
 
-  return new Date(year, month - 1, day, hour, minute, second);
+  return new Date(y, m - 1, d, h, min, s);
 }
 
 async function loadVisitors() {
+  const debug = document.getElementById("debug");
   const list = document.getElementById("visitorList");
+  debug.textContent = "";
   list.innerHTML = "Loading...";
 
   const dateValue = document.getElementById("datePicker").value;
   if (!dateValue) {
-    list.innerHTML = "Please select a date";
+    list.innerHTML = "Select a date";
     return;
   }
 
-  const greeting = document.getElementById("greeting").value;
-  const message = document.getElementById("message").value;
-
-  const csvUrl = convertToCsvUrl(SHEET_URL);
-
-  let response;
-  try {
-    response = await fetch(csvUrl);
-  } catch (e) {
-    list.innerHTML = "Failed to fetch data. Make sure the sheet is public.";
-    console.error(e);
-    return;
-  }
-
+  const response = await fetch(csvUrl(SHEET_URL));
   const text = await response.text();
-  const rows = text.trim().split("\n").slice(1);
+
+  const rows = parseCsv(text);
+  debug.textContent += `Rows loaded: ${rows.length}\n`;
+  debug.textContent += `Header: ${rows[0].join(" | ")}\n\n`;
+
+  const selected = new Date(dateValue);
+  const start = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 0,0,0);
+  const end = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 23,59,59);
+
   list.innerHTML = "";
 
-  // Selected date boundaries (start/end of day)
-  const selected = new Date(dateValue);
-  const startOfDay = new Date(
-    selected.getFullYear(),
-    selected.getMonth(),
-    selected.getDate(),
-    0, 0, 0, 0
-  );
-  const endOfDay = new Date(
-    selected.getFullYear(),
-    selected.getMonth(),
-    selected.getDate(),
-    23, 59, 59, 999
-  );
-
-  rows.forEach(row => {
-    const cols = row.replace(/"/g,"").split(",");
-    if (cols.length < 6) return;
-
+  rows.slice(1).forEach((cols, i) => {
     const visitDate = parseSheetDate(cols[0]);
+    debug.textContent += `Row ${i+1} raw date: "${cols[0]}" → ${visitDate}\n`;
+
     if (!visitDate) return;
+    if (visitDate < start || visitDate > end) return;
 
-    if (visitDate < startOfDay || visitDate > endOfDay) return;
-
-    const first = cols[1];
-    const last = cols[2];
-    const phone = cols[3];
-    const textYes = cols[4];
-
-    const smsEnabled = textYes.toLowerCase() !== "no";
+    const smsEnabled = cols[4]?.toLowerCase() !== "no";
 
     const div = document.createElement("div");
     div.className = "visitor";
-
     div.innerHTML = `
       <div>
-        <div><strong>${first} ${last}</strong></div>
-        <div>${formatPhone(phone)}</div>
+        <strong>${cols[1]} ${cols[2]}</strong><br>
+        ${cols[3]}
       </div>
-      <button class="sms-btn ${smsEnabled ? "sms-enabled" : "sms-disabled"}"
-        ${smsEnabled ? "" : "disabled"}
-        onclick="sendSms('${phone}','${first}','${greeting}','${message}')">
+      <button class="${smsEnabled ? "sms-enabled" : "sms-disabled"}"
+        ${smsEnabled ? "" : "disabled"}>
         Send SMS
       </button>
     `;
-
     list.appendChild(div);
   });
 
   if (!list.children.length) {
     list.innerHTML = "No visitors found for this date";
   }
-}
-
-function sendSms(phone, first, greeting, message) {
-  const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
-  window.location.href = `sms:${phone}?body=${body}`;
 }
 </script>
 
