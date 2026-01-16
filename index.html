@@ -95,33 +95,6 @@ function formatPhone(phone) {
     : phone;
 }
 
-// Robust CSV parser (handles quotes)
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let cell = "";
-  let inQuotes = false;
-
-  for (let char of text) {
-    if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
-      row.push(cell);
-      cell = "";
-    } else if ((char === '\n' || char === '\r') && !inQuotes) {
-      if (cell || row.length) row.push(cell);
-      if (row.length) rows.push(row);
-      row = [];
-      cell = "";
-    } else {
-      cell += char;
-    }
-  }
-  if (cell) row.push(cell);
-  if (row.length) rows.push(row);
-  return rows;
-}
-
 // Android-style date parser: "M/d/yyyy HH:mm:ss" + optional AM/PM
 function parseSheetDate(str) {
   if (!str) return null;
@@ -146,6 +119,13 @@ function sameDay(d1, d2) {
          d1.getDate() === d2.getDate();
 }
 
+// Clean CSV like Android app: remove quotes and trim
+function parseCsvCleaned(text) {
+  text = text.replace(/"/g, "");
+  const rows = text.split(/\r?\n/).map(r => r.split(",").map(c => c.trim()));
+  return rows.filter(r => r.length > 1); // remove empty rows
+}
+
 async function loadVisitors() {
   const debug = document.getElementById("debug");
   const list = document.getElementById("visitorList");
@@ -168,9 +148,9 @@ async function loadVisitors() {
   }
 
   const text = await response.text();
-  const rows = parseCsv(text);
+  const rows = parseCsvCleaned(text);
   debug.textContent += `Rows loaded: ${rows.length}\n`;
-  debug.textContent += `Header: ${rows[0].map(c=>c.trim()).join(" | ")}\n\n`;
+  debug.textContent += `Header: ${rows[0].join(" | ")}\n\n`;
 
   const selected = new Date(dateValue);
   list.innerHTML = "";
@@ -178,15 +158,15 @@ async function loadVisitors() {
   rows.slice(1).forEach((cols, i) => {
     if (cols.length < 6) return;
 
-    const visitDate = parseSheetDate(cols[0]?.trim());
+    const visitDate = parseSheetDate(cols[0]);
     debug.textContent += `Row ${i+1} raw date: "${cols[0]}" → ${visitDate}\n`;
     if (!visitDate) return;
     if (!sameDay(visitDate, selected)) return;
 
-    const first = cols[1]?.trim();
-    const last = cols[2]?.trim();
-    const phone = cols[3]?.trim();
-    const textYes = cols[4]?.trim();
+    const first = cols[1];
+    const last = cols[2];
+    const phone = cols[3];
+    const textYes = cols[4];
     const smsEnabled = textYes.toLowerCase() !== "no";
 
     const div = document.createElement("div");
