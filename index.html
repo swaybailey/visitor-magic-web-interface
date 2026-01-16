@@ -8,7 +8,7 @@
 <style>
 body {
   font-family: system-ui, sans-serif;
-  margin: 0; 1
+  margin: 0;
   padding: 16px;
   background: #f5f5f5;
 }
@@ -53,7 +53,7 @@ input, textarea, button {
 
 <body>
 
-<h1>Visitor Magic</h1>
+<h1>Visitor Magic 1</h1>
 
 <div class="controls">
   <label>Date</label>
@@ -95,5 +95,107 @@ function formatPhone(phone) {
 
 /**
  * ANDROID-EQUIVALENT DATE PARSER
- * Parses "M/d/yyy*
+ * Parses "M/d/yyyy HH:mm:ss"
+ */
+function parseSheetDate(dateTimeStr) {
+  if (!dateTimeStr) return null;
 
+  const [datePart, timePart] = dateTimeStr.split(" ");
+  if (!datePart || !timePart) return null;
+
+  const [month, day, year] = datePart.split("/").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+
+  return new Date(year, month - 1, day, hour, minute, second);
+}
+
+async function loadVisitors() {
+  const list = document.getElementById("visitorList");
+  list.innerHTML = "Loading...";
+
+  const dateValue = document.getElementById("datePicker").value;
+  if (!dateValue) {
+    list.innerHTML = "Please select a date";
+    return;
+  }
+
+  const greeting = document.getElementById("greeting").value;
+  const message = document.getElementById("message").value;
+
+  const csvUrl = convertToCsvUrl(SHEET_URL);
+
+  let response;
+  try {
+    response = await fetch(csvUrl);
+  } catch (e) {
+    list.innerHTML = "Failed to fetch data. Make sure the sheet is public.";
+    console.error(e);
+    return;
+  }
+
+  const text = await response.text();
+  const rows = text.trim().split("\n").slice(1);
+  list.innerHTML = "";
+
+  // Selected date boundaries (start/end of day)
+  const selected = new Date(dateValue);
+  const startOfDay = new Date(
+    selected.getFullYear(),
+    selected.getMonth(),
+    selected.getDate(),
+    0, 0, 0, 0
+  );
+  const endOfDay = new Date(
+    selected.getFullYear(),
+    selected.getMonth(),
+    selected.getDate(),
+    23, 59, 59, 999
+  );
+
+  rows.forEach(row => {
+    const cols = row.replace(/"/g,"").split(",");
+    if (cols.length < 6) return;
+
+    const visitDate = parseSheetDate(cols[0]);
+    if (!visitDate) return;
+
+    if (visitDate < startOfDay || visitDate > endOfDay) return;
+
+    const first = cols[1];
+    const last = cols[2];
+    const phone = cols[3];
+    const textYes = cols[4];
+
+    const smsEnabled = textYes.toLowerCase() !== "no";
+
+    const div = document.createElement("div");
+    div.className = "visitor";
+
+    div.innerHTML = `
+      <div>
+        <div><strong>${first} ${last}</strong></div>
+        <div>${formatPhone(phone)}</div>
+      </div>
+      <button class="sms-btn ${smsEnabled ? "sms-enabled" : "sms-disabled"}"
+        ${smsEnabled ? "" : "disabled"}
+        onclick="sendSms('${phone}','${first}','${greeting}','${message}')">
+        Send SMS
+      </button>
+    `;
+
+    list.appendChild(div);
+  });
+
+  if (!list.children.length) {
+    list.innerHTML = "No visitors found for this date";
+  }
+}
+
+function sendSms(phone, first, greeting, message) {
+  const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
+  window.location.href = `sms:${phone}?body=${body}`;
+}
+</script>
+
+</body>
+</html>
