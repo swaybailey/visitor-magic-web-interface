@@ -161,6 +161,9 @@ async function loadVisitors() {
   list.innerHTML = "";
 
   rows.slice(1).forEach(cols => {
+    // 🔒 SAFETY GUARD — THIS WAS MISSING
+    if (cols.length < 6) return;
+
     const visitDate = parseSheetDate(cols[0]);
     if (!visitDate || !sameDay(visitDate, selected)) return;
 
@@ -185,4 +188,24 @@ async function loadVisitors() {
       sendSms(phone, first);
     });
 
-    div.append(info, btn
+    div.append(info, btn);
+    list.appendChild(div);
+  });
+
+  if (!list.children.length) {
+    list.innerHTML = "No visitors found for this date";
+  }
+}
+
+/* ================= SMS ================= */
+
+function sendSms(phone, first) {
+  const greeting = document.getElementById("greeting").value;
+  const message = document.getElementById("message").value;
+  const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
+  window.location.href = `sms:${phone}?body=${body}`;
+}
+</script>
+
+</body>
+</html>
