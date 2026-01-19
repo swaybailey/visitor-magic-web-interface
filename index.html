@@ -38,8 +38,15 @@ input, textarea, button {
   align-items: center;
 }
 
-.sms-enabled { background: #47b80f; color: white; }
-.sms-disabled { background: #d32f2f; color: white; }
+.sms-enabled {
+  background: #47b80f;
+  color: white;
+}
+
+.sms-disabled {
+  background: #d32f2f;
+  color: white;
+}
 
 .debug {
   background: #000;
@@ -78,24 +85,23 @@ It was great having you in worship with us today. I look forward to getting to k
 <div id="debug" class="debug"></div>
 
 <script>
+/* ================= CONFIG ================= */
+
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
 
-// Convert Google Sheet URL to CSV export URL
+/* ================= HELPERS ================= */
+
+// Convert Google Sheet URL → CSV
 function csvUrl(url) {
   const gid = url.match(/gid=(\d+)/)?.[1];
-  return url.replace(/\/edit.*$/, `/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ""}`);
+  return url.replace(
+    /\/edit.*$/,
+    `/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ""}`
+  );
 }
 
-// Format phone number (10-digit)
-function formatPhone(phone) {
-  const digits = phone.replace(/\D/g, "");
-  return digits.length === 10
-    ? `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`
-    : phone;
-}
-
-// Android-style date parser: "M/d/yyyy HH:mm:ss" + optional AM/PM
+// Android-style date parser
 function parseSheetDate(str) {
   if (!str) return null;
 
@@ -112,23 +118,36 @@ function parseSheetDate(str) {
   return new Date(y, m - 1, d, h, min, s);
 }
 
-// Compare only the date portion (ignore time)
+// Ignore time — compare only calendar day
 function sameDay(d1, d2) {
   return d1.getFullYear() === d2.getFullYear() &&
          d1.getMonth() === d2.getMonth() &&
          d1.getDate() === d2.getDate();
 }
 
-// Clean CSV like Android app: remove quotes and trim
+// EXACTLY like Android: remove quotes and split
 function parseCsvCleaned(text) {
   text = text.replace(/"/g, "");
-  const rows = text.split(/\r?\n/).map(r => r.split(",").map(c => c.trim()));
-  return rows.filter(r => r.length > 1); // remove empty rows
+  const rows = text
+    .split(/\r?\n/)
+    .map(r => r.split(",").map(c => c.trim()));
+  return rows.filter(r => r.length > 1);
 }
+
+// Format phone number
+function formatPhone(phone) {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length === 10
+    ? `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`
+    : phone;
+}
+
+/* ================= MAIN ================= */
 
 async function loadVisitors() {
   const debug = document.getElementById("debug");
   const list = document.getElementById("visitorList");
+
   debug.textContent = "";
   list.innerHTML = "Loading...";
 
@@ -138,28 +157,34 @@ async function loadVisitors() {
     return;
   }
 
+  /* 🔥 CRITICAL FIX — LOCAL DATE (ANDROID STYLE) */
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const selected = new Date(year, month - 1, day);
+
   let response;
   try {
     response = await fetch(csvUrl(SHEET_URL));
   } catch (e) {
-    list.innerHTML = "Failed to fetch CSV. Make sure the sheet is public.";
+    list.innerHTML = "Failed to fetch CSV";
     debug.textContent = e;
     return;
   }
 
   const text = await response.text();
   const rows = parseCsvCleaned(text);
+
   debug.textContent += `Rows loaded: ${rows.length}\n`;
   debug.textContent += `Header: ${rows[0].join(" | ")}\n\n`;
 
-  const selected = new Date(dateValue);
   list.innerHTML = "";
 
   rows.slice(1).forEach((cols, i) => {
     if (cols.length < 6) return;
 
     const visitDate = parseSheetDate(cols[0]);
-    debug.textContent += `Row ${i+1} raw date: "${cols[0]}" → ${visitDate}\n`;
+    debug.textContent +=
+      `Row ${i+1} raw date: "${cols[0]}" → ${visitDate}\n`;
+
     if (!visitDate) return;
     if (!sameDay(visitDate, selected)) return;
 
@@ -177,10 +202,13 @@ async function loadVisitors() {
         ${formatPhone(phone)}
       </div>
       <button class="${smsEnabled ? "sms-enabled" : "sms-disabled"}"
-        ${smsEnabled ? `onclick="sendSms('${phone}','${first}','${document.getElementById('greeting').value}','${document.getElementById('message').value}')" ` : "disabled"}>
+        ${smsEnabled
+          ? `onclick="sendSms('${phone}','${first}','${greeting.value}','${message.value}')"`
+          : "disabled"}>
         Send SMS
       </button>
     `;
+
     list.appendChild(div);
   });
 
@@ -189,7 +217,7 @@ async function loadVisitors() {
   }
 }
 
-// Open SMS app (mobile)
+// Mobile SMS intent
 function sendSms(phone, first, greeting, message) {
   const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
   window.location.href = `sms:${phone}?body=${body}`;
