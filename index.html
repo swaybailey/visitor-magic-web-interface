@@ -1,199 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Visitor Magic</title>
+
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-    }
-    #top-bar {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 20px;
-        position: relative;
-    }
-    #sheet-link {
-        position: absolute;
-        left: 0;
-        cursor: pointer;
-        font-size: 24px;
-        color: #1976D2;
-        text-decoration: none;
-    }
-    h1 {
-        margin: 0;
-        font-size: 32px;
-        font-weight: bold;
-        text-align: center;
-    }
-    #controls {
-        margin-bottom: 20px;
-    }
-    #visitors {
-        margin-top: 20px;
-    }
-    .visitor {
-        border-bottom: 1px solid #ccc;
-        padding: 8px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .visitor-info {
-        flex: 1;
-    }
-    .phone {
-        color: red;
-        margin: 4px 0;
-    }
-    .children {
-        color: red;
-        font-style: italic;
-        margin-top: 2px;
-    }
-    .sms-button {
-        background-color: #47B80F;
-        color: white;
-        border: none;
-        padding: 6px 10px;
-        cursor: pointer;
-        font-size: 12px;
-        border-radius: 4px;
-    }
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  padding: 16px;
+  background: #f5f5f5;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+header h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 24px;
+}
+
+header a {
+  text-decoration: none;
+  font-size: 20px;
+  margin-right: 8px;
+}
+
+.controls {
+  margin-bottom: 16px;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+button {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.visitor {
+  background: white;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.visitor-info {
+  flex: 1;
+}
+
+.children {
+  color: red;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.sms-enabled {
+  background: #47b80f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.sms-disabled {
+  background: #ccc;
+  color: #666;
+  border: none;
+  border-radius: 4px;
+}
 </style>
 </head>
+
 <body>
 
-<div id="top-bar">
-    <a id="sheet-link" href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank">🔗</a>
-    <h1>Visitor Magic</h1>
+<header>
+  <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank" title="Open original sheet">📄</a>
+  <h1>Visitor Magic</h1>
+</header>
+
+<div class="controls">
+  <label>Date</label>
+  <input type="date" id="datePicker">
+
+  <label>Greeting</label>
+  <input type="text" id="greeting" value="Hey">
+
+  <label>Message</label>
+  <textarea id="message" rows="4">
+It was great having you in worship with us today.
+I look forward to getting to know you.
+  </textarea>
+
+  <button id="loadBtn">Load Visitors</button>
 </div>
 
-<div id="controls">
-    <label for="visit-date">Select date: </label>
-    <input type="date" id="visit-date" />
-    <button id="load-visitors">Load Visitors</button>
-</div>
-
-<div id="visitors"></div>
+<div id="visitorList"></div>
 
 <script>
-const csvUrl = "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/gviz/tq?tqx=out:csv&gid=671174622";
+/* ================= CONFIG ================= */
 
-function parseCSV(csvText) {
-    const lines = csvText.trim().split('\n');
-    const header = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-    const rows = lines.slice(1).map(line => {
-        const parts = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(p => p.replace(/"/g, '').trim());
-        const row = {};
-        header.forEach((h, i) => row[h] = parts[i] || '');
-        return row;
-    });
-    return rows;
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
+
+/* ================= HELPERS ================= */
+
+function csvUrl(url) {
+  const gid = url.match(/gid=(\d+)/)?.[1];
+  return url.replace(
+    /\/edit.*$/,
+    `/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ""}`
+  );
 }
 
-function formatDate(date) {
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    return `${yyyy}-${mm}-${dd}`;
+function parseSheetDate(str) {
+  if (!str) return null;
+  const m = str.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/
+  );
+  if (!m) return null;
+
+  return new Date(
+    m[3], m[1] - 1, m[2],
+    m[4], m[5], m[6]
+  );
 }
 
-function filterVisitorsByDate(visitors, selectedDate) {
-    return visitors.filter(visitor => {
-        const visitDate = new Date(visitor['Timestamp']);
-        const yyyy = visitDate.getFullYear();
-        const mm = String(visitDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(visitDate.getDate()).padStart(2, '0');
-        const visitorDate = `${yyyy}-${mm}-${dd}`;
-        return visitorDate === selectedDate;
-    });
+function sameDay(d1, d2) {
+  return d1.getFullYear() === d2.getFullYear() &&
+         d1.getMonth() === d2.getMonth() &&
+         d1.getDate() === d2.getDate();
 }
 
-function cleanPhoneNumber(phone) {
-    const digits = phone.replace(/\D/g, '');
-    return digits.length === 10
-        ? `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6,10)}`
-        : phone;
+function parseCsvCleaned(text) {
+  text = text.replace(/"/g, "");
+  return text
+    .split(/\r?\n/)
+    .map(r => r.split(",").map(c => c.trim()))
+    .filter(r => r.length > 1);
 }
 
-function getChildrenInfo(visitor) {
-    const children = [];
-    for (let i = 0; i < 5; i++) {
-        const nameKey = `Child's name${i > 0 ? `_${i}` : ''}`;
-        const ageKey = `age${i > 0 ? `_${i}` : ''}`;
-        if (visitor[nameKey] && visitor[ageKey]) {
-            children.push(`${visitor[nameKey]} (${visitor[ageKey]})`);
-        }
-    }
-    return children.join(', ');
+function formatPhone(phone) {
+  const d = phone.replace(/\D/g, "");
+  return d.length === 10
+    ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`
+    : phone;
 }
+
+/* ================= MAIN ================= */
+
+document.getElementById("loadBtn")
+  .addEventListener("click", loadVisitors);
 
 async function loadVisitors() {
-    const dateInput = document.getElementById('visit-date').value;
-    if (!dateInput) {
-        alert('Please select a date.');
-        return;
-    }
-    const res = await fetch(csvUrl);
-    const text = await res.text();
-    const visitors = parseCSV(text);
-    const filtered = filterVisitorsByDate(visitors, dateInput);
+  const list = document.getElementById("visitorList");
+  list.innerHTML = "Loading...";
 
-    const container = document.getElementById('visitors');
-    container.innerHTML = '';
-    if (filtered.length === 0) {
-        container.innerHTML = '<p>No visitors found</p>';
-        return;
-    }
+  const dateValue = document.getElementById("datePicker").value;
+  if (!dateValue) {
+    list.innerHTML = "Select a date";
+    return;
+  }
 
-    filtered.forEach(visitor => {
-        const div = document.createElement('div');
-        div.className = 'visitor';
+  const [y, m, d] = dateValue.split("-").map(Number);
+  const selected = new Date(y, m - 1, d);
 
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'visitor-info';
-        infoDiv.innerHTML = `
-            <div>Name: ${visitor['First Name']} ${visitor['Last Name']}</div>
-            <div class="phone">Phone: ${cleanPhoneNumber(visitor['Phone Number'])}</div>
-        `;
+  const res = await fetch(csvUrl(SHEET_URL));
+  const rows = parseCsvCleaned(await res.text());
 
-        const childrenInfo = getChildrenInfo(visitor);
-        if (childrenInfo) {
-            const childrenDiv = document.createElement('div');
-            childrenDiv.className = 'children';
-            childrenDiv.textContent = `Children: ${childrenInfo}`;
-            infoDiv.appendChild(childrenDiv);
+  list.innerHTML = "";
+
+  rows.slice(1).forEach(cols => {
+    if (cols.length < 12) return;
+
+    const visitDate = parseSheetDate(cols[0]);
+    if (!visitDate || !sameDay(visitDate, selected)) return;
+
+    const first = cols[1];
+    const last = cols[2];
+    const phone = cols[3];
+    const smsAllowed = cols[4].toLowerCase() !== "no";
+
+    /* 👶 CHILDREN — CORRECT OFFSET */
+    const children = [];
+    if (cols[11].toLowerCase() === "yes") { // "Children living at home"
+      for (let i = 12; i < cols.length; i += 2) {
+        const name = cols[i];
+        const age = cols[i + 1];
+        if (name && age) {
+          children.push(`${name} (${age})`);
         }
+      }
+    }
 
-        const smsBtn = document.createElement('button');
-        smsBtn.className = 'sms-button';
-        smsBtn.textContent = 'SMS';
-        if (visitor['Do you receive texts at this number'].toLowerCase() === 'no') {
-            smsBtn.disabled = true;
-            smsBtn.style.backgroundColor = 'red';
-        } else {
-            smsBtn.onclick = () => {
-                const msg = `Hi ${visitor['First Name']}, it was great having you in worship today!`;
-                window.location.href = `sms:${cleanPhoneNumber(visitor['Phone Number'])}?body=${encodeURIComponent(msg)}`;
-            };
-        }
+    const div = document.createElement("div");
+    div.className = "visitor";
 
-        div.appendChild(infoDiv);
-        div.appendChild(smsBtn);
+    const info = document.createElement("div");
+    info.className = "visitor-info";
+    info.innerHTML = `
+      <strong>${first} ${last}</strong><br>
+      ${formatPhone(phone)}
+      ${children.length ? `<div class="children">Children: ${children.join(", ")}</div>` : ""}
+    `;
 
-        container.appendChild(div);
+    const btn = document.createElement("button");
+    btn.textContent = "SMS";
+    btn.className = smsAllowed ? "sms-enabled" : "sms-disabled";
+    btn.disabled = !smsAllowed;
+
+    btn.addEventListener("click", () => {
+      sendSms(phone, first);
     });
+
+    div.append(info, btn);
+    list.appendChild(div);
+  });
+
+  if (!list.children.length) {
+    list.innerHTML = "No visitors found for this date";
+  }
 }
 
-document.getElementById('load-visitors').addEventListener('click', loadVisitors);
+/* ================= SMS ================= */
 
-// Set default date to today
-document.getElementById('visit-date').value = formatDate(new Date());
+function sendSms(phone, first) {
+  const greeting = document.getElementById("greeting").value;
+  const message = document.getElementById("message").value;
+  const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
+  window.location.href = `sms:${phone}?body=${body}`;
+}
 </script>
 
 </body>
