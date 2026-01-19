@@ -109,7 +109,6 @@ function csvUrl(url) {
 
 function parseSheetDate(str) {
   if (!str) return null;
-
   const m = str.match(
     /^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/
   );
@@ -166,7 +165,7 @@ async function loadVisitors() {
   list.innerHTML = "";
 
   rows.slice(1).forEach(cols => {
-    if (cols.length < 6) return;
+    if (cols.length < 12) return;
 
     const visitDate = parseSheetDate(cols[0]);
     if (!visitDate || !sameDay(visitDate, selected)) return;
@@ -176,9 +175,9 @@ async function loadVisitors() {
     const phone = cols[3];
     const smsAllowed = cols[4].toLowerCase() !== "no";
 
-    /* 👶 CHILDREN PARSING */
+    /* 👶 CHILDREN — CORRECT OFFSET */
     const children = [];
-    for (let i = 11; i < cols.length; i += 2) {
+    for (let i = 12; i < cols.length; i += 2) {
       const name = cols[i];
       const age = cols[i + 1];
       if (name && age) {
@@ -191,7 +190,6 @@ async function loadVisitors() {
 
     const info = document.createElement("div");
     info.className = "visitor-info";
-
     info.innerHTML = `
       <strong>${first} ${last}</strong><br>
       ${formatPhone(phone)}
