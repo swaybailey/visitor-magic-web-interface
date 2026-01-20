@@ -73,7 +73,7 @@ header h1 {
 
 .visitor-btn {
   display: block;
-  width: 85%;
+  width: 70%;
   padding: 10px;
   margin: 0 auto 8px;
   font-size: 16px;
@@ -209,7 +209,7 @@ async function loadVisitors() {
     const last = cols[2];
     if (!first || !last) return;
 
-    // Construct children names if applicable
+    // Children names
     let childrenNames = [];
     if (cols[11]?.toLowerCase() === "yes") {
       for (let i = 12; i < cols.length; i += 2) {
@@ -217,15 +217,17 @@ async function loadVisitors() {
       }
     }
 
-    // Construct VCF note
+    // Only take date part, discard time
+    const visitDateOnly = cols[0].split(" ")[0];
+
     const noteLines = [
-      `Date of first visit: ${cols[0]}`,
+      `Date of first visit: ${visitDateOnly}`,
       ...(childrenNames.length ? ["Children: " + childrenNames.join(", ")] : []),
       "Added automatically from VisitorMagicWeb"
     ];
     const note = noteLines.join("\\n");
 
-    // Construct address
+    // Address
     const address = [cols[8], cols[9], cols[10]].filter(Boolean).join(", ");
 
     const email = cols[5] || "";
