@@ -14,13 +14,16 @@ body {
 }
 
 header {
+  position: relative;
   display: flex;
   align-items: center;
   margin-bottom: 16px;
 }
 
 header h1 {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   margin: 0;
   font-size: 24px;
 }
@@ -28,7 +31,14 @@ header h1 {
 header a {
   text-decoration: none;
   font-size: 20px;
-  margin-right: 8px;
+}
+
+.header-left {
+  margin-right: auto;
+}
+
+.header-right {
+  margin-left: auto;
 }
 
 .controls {
@@ -86,8 +96,19 @@ button {
 <body>
 
 <header>
-  <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank" title="Open original sheet">📄</a>
+  <!-- Far Left: Spreadsheet Link -->
+  <a class="header-left"
+     href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622"
+     target="_blank"
+     title="Open original sheet">📄</a>
+
+  <!-- Centered Title -->
   <h1>Visitor Magic</h1>
+
+  <!-- Far Right: Add Contact -->
+  <a class="header-right"
+     href="addcontact.html"
+     title="Add Contact">➕</a>
 </header>
 
 <div class="controls">
@@ -192,9 +213,9 @@ async function loadVisitors() {
     const phone = cols[3];
     const smsAllowed = cols[4].toLowerCase() !== "no";
 
-    /* 👶 CHILDREN — CORRECT OFFSET */
+    /* 👶 CHILDREN */
     const children = [];
-    if (cols[11].toLowerCase() === "yes") { // "Children living at home"
+    if (cols[11].toLowerCase() === "yes") {
       for (let i = 12; i < cols.length; i += 2) {
         const name = cols[i];
         const age = cols[i + 1];
@@ -212,7 +233,7 @@ async function loadVisitors() {
     info.innerHTML = `
       <strong>${first} ${last}</strong><br>
       ${formatPhone(phone)}
-      ${children.length ? `<div class="children">Children: ${children.join(", ")}</div>` : ""}
+      ${children.length ? `<div class="children"><strong>Children:</strong> ${children.join(", ")}</div>` : ""}
     `;
 
     const btn = document.createElement("button");
