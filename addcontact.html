@@ -47,9 +47,13 @@ header h1 {
 /* ===== Date Range ===== */
 
 .date-range {
-  display: flex;
+  display: none;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.date-range.show {
+  display: flex;
 }
 
 .date-range input {
@@ -64,6 +68,7 @@ header h1 {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 12px;
+  text-align: center;
 }
 
 .visitor-btn {
@@ -95,14 +100,17 @@ header h1 {
   <!-- Centered Title -->
   <h1>Add Contact</h1>
 
-  <!-- Placeholder Icon -->
-  <button class="icon-button header-right" title="Date Range">
+  <!-- Calendar Toggle -->
+  <button
+    class="icon-button header-right"
+    id="calendarToggle"
+    title="Select Date Range">
     📅
   </button>
 </header>
 
-<!-- Date Range Picker -->
-<div class="date-range">
+<!-- Date Range Picker (hidden by default) -->
+<div id="dateRange" class="date-range">
   <input type="date" id="startDate">
   <input type="date" id="endDate">
 </div>
@@ -155,12 +163,20 @@ function formatDate(d) {
 
 const startInput = document.getElementById("startDate");
 const endInput = document.getElementById("endDate");
+const label = document.getElementById("label");
+const dateRange = document.getElementById("dateRange");
 
 initDates();
 loadVisitors();
 
 startInput.addEventListener("change", loadVisitors);
 endInput.addEventListener("change", loadVisitors);
+
+/* Toggle date picker */
+document.getElementById("calendarToggle")
+  .addEventListener("click", () => {
+    dateRange.classList.toggle("show");
+  });
 
 function initDates() {
   const end = new Date();
@@ -173,8 +189,6 @@ function initDates() {
 
 async function loadVisitors() {
   const container = document.getElementById("visitorButtons");
-  const label = document.getElementById("label");
-
   container.innerHTML = "Loading...";
 
   const start = new Date(startInput.value);
