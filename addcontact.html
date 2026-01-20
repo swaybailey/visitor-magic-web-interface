@@ -36,10 +36,6 @@ header h1 {
   padding: 4px;
 }
 
-.icon-button:focus {
-  outline: none;
-}
-
 .header-left {
   margin-right: auto;
 }
@@ -47,13 +43,37 @@ header h1 {
 .header-right {
   margin-left: auto;
 }
+
+/* ===== Content ===== */
+
+.section-label {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.visitor-btn {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 8px;
+  font-size: 16px;
+  background: #47b80f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.visitor-btn:disabled {
+  opacity: 0.9;
+}
 </style>
 </head>
 
 <body>
 
 <header>
-  <!-- Back Button (bold style to match ➕ icon) -->
+  <!-- Back Button -->
   <button
     class="icon-button header-left"
     onclick="history.back()"
@@ -71,6 +91,87 @@ header h1 {
     📅
   </button>
 </header>
+
+<div class="section-label">Visitors from last 30 days</div>
+<div id="visitorButtons">Loading...</div>
+
+<script>
+/* ================= CONFIG ================= */
+
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
+
+/* ================= HELPERS ================= */
+
+function csvUrl(url) {
+  const gid = url.match(/gid=(\d+)/)?.[1];
+  return url.replace(
+    /\/edit.*$/,
+    `/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ""}`
+  );
+}
+
+function parseSheetDate(str) {
+  if (!str) return null;
+  const m = str.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/
+  );
+  if (!m) return null;
+
+  return new Date(
+    m[3], m[1] - 1, m[2],
+    m[4], m[5], m[6]
+  );
+}
+
+function parseCsvCleaned(text) {
+  text = text.replace(/"/g, "");
+  return text
+    .split(/\r?\n/)
+    .map(r => r.split(",").map(c => c.trim()))
+    .filter(r => r.length > 1);
+}
+
+/* ================= MAIN ================= */
+
+loadRecentVisitors();
+
+async function loadRecentVisitors() {
+  const container = document.getElementById("visitorButtons");
+  container.innerHTML = "Loading...";
+
+  const now = new Date();
+  const cutoff = new Date();
+  cutoff.setDate(now.getDate() - 30);
+
+  const res = await fetch(csvUrl(SHEET_URL));
+  const rows = parseCsvCleaned(await res.text());
+
+  container.innerHTML = "";
+
+  rows.slice(1).forEach(cols => {
+    if (cols.length < 3) return;
+
+    const visitDate = parseSheetDate(cols[0]);
+    if (!visitDate || visitDate < cutoff) return;
+
+    const first = cols[1];
+    const last = cols[2];
+    if (!first || !last) return;
+
+    const btn = document.createElement("button");
+    btn.className = "visitor-btn";
+    btn.textContent = `${first} ${last}`;
+    btn.disabled = true; // not functional yet
+
+    container.appendChild(btn);
+  });
+
+  if (!container.children.length) {
+    container.innerHTML = "No visitors in the last 30 days";
+  }
+}
+</script>
 
 </body>
 </html>
