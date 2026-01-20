@@ -26,18 +26,18 @@ header h1 {
   text-align: center;
 }
 
-header a {
+header a, .header-plus {
   text-decoration: none;
   font-size: 20px;
-  margin-right: 8px;
+  margin: 0 8px;
+}
+
+.header-plus {
+  margin-left: auto;
 }
 
 .controls {
   margin-bottom: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
 }
 
 .controls label {
@@ -53,8 +53,9 @@ input[type="date"] {
 input[type="text"], textarea {
   width: 100%;
   padding: 8px;
-  margin-top: 8px;
+  margin-top: 4px; /* move label down slightly */
   font-size: 16px;
+  display: block;
 }
 
 button {
@@ -104,16 +105,20 @@ button {
 <header>
   <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank" title="Open original sheet">📄</a>
   <h1>Visitor Magic</h1>
+  <!-- Restore Plus button linking to addcontact.html -->
+  <a href="addcontact.html" class="header-plus" title="Add Contact">➕</a>
 </header>
 
 <div class="controls">
-  <label>Date</label>
+  <label for="datePicker">Date</label>
   <input type="date" id="datePicker">
 
-  <label>Greeting</label>
+  <br>
+
+  <label for="greeting">Greeting</label>
   <input type="text" id="greeting" value="Hey">
 
-  <label>Message</label>
+  <label for="message">Message</label>
   <textarea id="message" rows="4">
 It was great having you in worship with us today.
 I look forward to getting to know you.
@@ -179,10 +184,14 @@ function formatPhone(phone) {
 document.getElementById("loadBtn")
   .addEventListener("click", loadVisitors);
 
-// Load current date on page load
+// Load current date (local) on page load
 window.addEventListener("DOMContentLoaded", () => {
   const today = new Date();
-  document.getElementById("datePicker").value = today.toISOString().split("T")[0];
+  // convert to yyyy-mm-dd in local time
+  const localDate = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
+  document.getElementById("datePicker").value = localDate;
   loadVisitors();
 });
 
