@@ -100,16 +100,19 @@ input[type="text"], textarea {
 <body>
 
 <script>
-// ======= SIMPLE PASSWORD PROTECTION =======
-const PASSWORD = "9403955252"; // set your password here
+// ======= USERNAME + PASSWORD PROTECTION =======
+const PASSWORD = "MySecret123"; // only the password is checked
 const storedPass = sessionStorage.getItem("vm_pass");
 
 if (storedPass !== PASSWORD) {
-  const entry = prompt("Enter password to access Visitor Magic:");
-  if (entry !== PASSWORD) {
+  const username = prompt("Enter your username:"); // cosmetic
+  const password = prompt(`Hello ${username || "user"}, enter your password:`);
+
+  if (password !== PASSWORD) {
     document.body.innerHTML = "<h2>Access Denied</h2>";
     throw new Error("Access denied");
   }
+
   sessionStorage.setItem("vm_pass", PASSWORD);
 }
 </script>
@@ -135,12 +138,10 @@ if (storedPass !== PASSWORD) {
 
 <script>
 /* ================= CONFIG ================= */
-
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
 
 /* ================= HELPERS ================= */
-
 function csvUrl(url) {
   const gid = url.match(/gid=(\d+)/)?.[1];
   return url.replace(
@@ -184,41 +185,33 @@ function formatPhone(phone) {
 }
 
 /* ================= MAIN ================= */
-
 const datePicker = document.getElementById("datePicker");
 const messageInput = document.getElementById("message");
 const greetingInput = document.getElementById("greeting");
 
-// Load saved greeting and message from localStorage
-if (localStorage.getItem("vm_message")) {
-  messageInput.value = localStorage.getItem("vm_message");
-}
-if (localStorage.getItem("vm_greeting")) {
-  greetingInput.value = localStorage.getItem("vm_greeting");
-}
+// Default greeting/message
+const DEFAULT_GREETING = "Hey";
+const DEFAULT_MESSAGE = "It was great having you in worship with us today.\nI look forward to getting to know you.";
 
-// Save message to localStorage whenever it changes
-messageInput.addEventListener("input", () => {
-  localStorage.setItem("vm_message", messageInput.value);
-});
+// Load saved greeting/message or use defaults
+greetingInput.value = localStorage.getItem("vm_greeting") || DEFAULT_GREETING;
+messageInput.value = localStorage.getItem("vm_message") || DEFAULT_MESSAGE;
 
-// Save greeting to localStorage whenever it changes
-greetingInput.addEventListener("input", () => {
-  localStorage.setItem("vm_greeting", greetingInput.value);
-});
+// Save greeting/message to localStorage
+messageInput.addEventListener("input", () => localStorage.setItem("vm_message", messageInput.value));
+greetingInput.addEventListener("input", () => localStorage.setItem("vm_greeting", greetingInput.value));
 
-// Load current local date on page load
+// Load local date on page load
 window.addEventListener("DOMContentLoaded", () => {
   const today = new Date();
   const localDate = today.getFullYear() + '-' +
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
   datePicker.value = localDate;
-
   loadVisitors();
 });
 
-// Automatically poll whenever the date changes
+// Automatically load visitors when date changes
 datePicker.addEventListener("change", loadVisitors);
 
 async function loadVisitors() {
@@ -255,9 +248,7 @@ async function loadVisitors() {
       for (let i = 12; i < cols.length; i += 2) {
         const name = cols[i];
         const age = cols[i + 1];
-        if (name && age) {
-          children.push(`${name} (${age})`);
-        }
+        if (name && age) children.push(`${name} (${age})`);
       }
     }
 
@@ -294,7 +285,6 @@ async function loadVisitors() {
 }
 
 /* ================= SMS ================= */
-
 function sendSms(phone, first) {
   const greeting = greetingInput.value;
   const message = messageInput.value;
