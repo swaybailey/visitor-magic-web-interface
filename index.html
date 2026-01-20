@@ -99,6 +99,21 @@ input[type="text"], textarea {
 
 <body>
 
+<script>
+// ======= SIMPLE PASSWORD PROTECTION =======
+const PASSWORD = "9403955252"; // set your password here
+const storedPass = sessionStorage.getItem("vm_pass");
+
+if (storedPass !== PASSWORD) {
+  const entry = prompt("Enter password to access Visitor Magic:");
+  if (entry !== PASSWORD) {
+    document.body.innerHTML = "<h2>Access Denied</h2>";
+    throw new Error("Access denied");
+  }
+  sessionStorage.setItem("vm_pass", PASSWORD);
+}
+</script>
+
 <header>
   <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank" title="Open original sheet">📄</a>
   <h1>Visitor Magic</h1>
@@ -110,13 +125,10 @@ input[type="text"], textarea {
   <input type="date" id="datePicker">
 
   <label for="greeting">Greeting</label>
-  <input type="text" id="greeting" value="Hey">
+  <input type="text" id="greeting">
 
   <label for="message">Message</label>
-  <textarea id="message" rows="4">
-It was great having you in worship with us today.
-I look forward to getting to know you.
-  </textarea>
+  <textarea id="message" rows="4"></textarea>
 </div>
 
 <div id="visitorList"></div>
@@ -174,6 +186,26 @@ function formatPhone(phone) {
 /* ================= MAIN ================= */
 
 const datePicker = document.getElementById("datePicker");
+const messageInput = document.getElementById("message");
+const greetingInput = document.getElementById("greeting");
+
+// Load saved greeting and message from localStorage
+if (localStorage.getItem("vm_message")) {
+  messageInput.value = localStorage.getItem("vm_message");
+}
+if (localStorage.getItem("vm_greeting")) {
+  greetingInput.value = localStorage.getItem("vm_greeting");
+}
+
+// Save message to localStorage whenever it changes
+messageInput.addEventListener("input", () => {
+  localStorage.setItem("vm_message", messageInput.value);
+});
+
+// Save greeting to localStorage whenever it changes
+greetingInput.addEventListener("input", () => {
+  localStorage.setItem("vm_greeting", greetingInput.value);
+});
 
 // Load current local date on page load
 window.addEventListener("DOMContentLoaded", () => {
@@ -264,8 +296,8 @@ async function loadVisitors() {
 /* ================= SMS ================= */
 
 function sendSms(phone, first) {
-  const greeting = document.getElementById("greeting").value;
-  const message = document.getElementById("message").value;
+  const greeting = greetingInput.value;
+  const message = messageInput.value;
   const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
   window.location.href = `sms:${phone}?body=${body}`;
 }
