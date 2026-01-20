@@ -81,7 +81,7 @@ header h1 {
   color: white;
   border: none;
   border-radius: 6px;
-  cursor: default;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -89,7 +89,6 @@ header h1 {
 <body>
 
 <header>
-  <!-- Back Button -->
   <button
     class="icon-button header-left"
     onclick="history.back()"
@@ -97,10 +96,8 @@ header h1 {
     ⬅️
   </button>
 
-  <!-- Centered Title -->
   <h1>Add Contact</h1>
 
-  <!-- Calendar Toggle -->
   <button
     class="icon-button header-right"
     id="calendarToggle"
@@ -109,7 +106,6 @@ header h1 {
   </button>
 </header>
 
-<!-- Date Range Picker (hidden by default) -->
 <div id="dateRange" class="date-range">
   <input type="date" id="startDate">
   <input type="date" id="endDate">
@@ -213,9 +209,52 @@ async function loadVisitors() {
     const last = cols[2];
     if (!first || !last) return;
 
+    // Construct children names if applicable
+    let childrenNames = [];
+    if (cols[11]?.toLowerCase() === "yes") {
+      for (let i = 12; i < cols.length; i += 2) {
+        if (cols[i]) childrenNames.push(cols[i]);
+      }
+    }
+
+    // Construct VCF note
+    const noteLines = [
+      `Date of first visit: ${cols[0]}`,
+      ...(childrenNames.length ? ["Children: " + childrenNames.join(", ")] : []),
+      "Added automatically from VisitorMagicWeb"
+    ];
+    const note = noteLines.join("\\n");
+
+    // Construct address
+    const address = [cols[8], cols[9], cols[10]].filter(Boolean).join(", ");
+
+    const email = cols[5] || "";
+
     const btn = document.createElement("button");
     btn.className = "visitor-btn";
     btn.textContent = `${first} ${last}`;
+    btn.addEventListener("click", () => {
+      const vcf = [
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+        `N:${last};${first};;;`,
+        `FN:${first} ${last}`,
+        address ? `ADR:;;${address};;;;` : "",
+        email ? `EMAIL:${email}` : "",
+        `NOTE:${note}`,
+        "END:VCARD"
+      ].filter(Boolean).join("\n");
+
+      const blob = new Blob([vcf], { type: "text/vcard" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${first}_${last}.vcf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
 
     container.appendChild(btn);
   });
