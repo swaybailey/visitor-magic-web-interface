@@ -44,6 +44,20 @@ header h1 {
   margin-left: auto;
 }
 
+/* ===== Date Range ===== */
+
+.date-range {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.date-range input {
+  flex: 1;
+  padding: 8px;
+  font-size: 16px;
+}
+
 /* ===== Content ===== */
 
 .section-label {
@@ -53,19 +67,16 @@ header h1 {
 }
 
 .visitor-btn {
-  width: 100%;
+  display: block;
+  width: 85%;
   padding: 10px;
-  margin-bottom: 8px;
+  margin: 0 auto 8px;
   font-size: 16px;
   background: #47b80f;
   color: white;
   border: none;
   border-radius: 6px;
-  cursor: pointer;
-}
-
-.visitor-btn:disabled {
-  opacity: 0.9;
+  cursor: default;
 }
 </style>
 </head>
@@ -84,15 +95,19 @@ header h1 {
   <!-- Centered Title -->
   <h1>Add Contact</h1>
 
-  <!-- Date Icon (placeholder) -->
-  <button
-    class="icon-button header-right"
-    title="Select Date">
+  <!-- Placeholder Icon -->
+  <button class="icon-button header-right" title="Date Range">
     📅
   </button>
 </header>
 
-<div class="section-label">Visitors from last 30 days</div>
+<!-- Date Range Picker -->
+<div class="date-range">
+  <input type="date" id="startDate">
+  <input type="date" id="endDate">
+</div>
+
+<div id="label" class="section-label"></div>
 <div id="visitorButtons">Loading...</div>
 
 <script>
@@ -132,17 +147,42 @@ function parseCsvCleaned(text) {
     .filter(r => r.length > 1);
 }
 
+function formatDate(d) {
+  return d.toLocaleDateString();
+}
+
 /* ================= MAIN ================= */
 
-loadRecentVisitors();
+const startInput = document.getElementById("startDate");
+const endInput = document.getElementById("endDate");
 
-async function loadRecentVisitors() {
+initDates();
+loadVisitors();
+
+startInput.addEventListener("change", loadVisitors);
+endInput.addEventListener("change", loadVisitors);
+
+function initDates() {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 30);
+
+  startInput.value = start.toISOString().split("T")[0];
+  endInput.value = end.toISOString().split("T")[0];
+}
+
+async function loadVisitors() {
   const container = document.getElementById("visitorButtons");
+  const label = document.getElementById("label");
+
   container.innerHTML = "Loading...";
 
-  const now = new Date();
-  const cutoff = new Date();
-  cutoff.setDate(now.getDate() - 30);
+  const start = new Date(startInput.value);
+  const end = new Date(endInput.value);
+  end.setHours(23, 59, 59, 999);
+
+  label.textContent =
+    `Visitors from ${formatDate(start)} to ${formatDate(end)}`;
 
   const res = await fetch(csvUrl(SHEET_URL));
   const rows = parseCsvCleaned(await res.text());
@@ -153,7 +193,7 @@ async function loadRecentVisitors() {
     if (cols.length < 3) return;
 
     const visitDate = parseSheetDate(cols[0]);
-    if (!visitDate || visitDate < cutoff) return;
+    if (!visitDate || visitDate < start || visitDate > end) return;
 
     const first = cols[1];
     const last = cols[2];
@@ -162,13 +202,12 @@ async function loadRecentVisitors() {
     const btn = document.createElement("button");
     btn.className = "visitor-btn";
     btn.textContent = `${first} ${last}`;
-    btn.disabled = true; // not functional yet
 
     container.appendChild(btn);
   });
 
   if (!container.children.length) {
-    container.innerHTML = "No visitors in the last 30 days";
+    container.innerHTML = "No visitors found for this date range";
   }
 }
 </script>
