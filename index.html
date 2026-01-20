@@ -238,6 +238,9 @@ async function loadVisitors() {
       <strong>${first} ${last}</strong><br>
       ${formatPhone(phone)}
       ${children.length ? `<div class="children">Children: ${children.join(", ")}</div>` : ""}
+      <div class="children" style="color: green;">
+        ${cols[9]}, ${cols[10]}
+      </div>
     `;
 
     const btn = document.createElement("button");
