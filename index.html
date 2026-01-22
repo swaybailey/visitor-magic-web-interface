@@ -118,7 +118,7 @@ if (storedPass !== PASSWORD) {
 </script>
 
 <header>
-  <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank" title="Open original sheet">📄</a>
+  <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank" title="Open original sheet">📄</a>
   <h1>Visitor Magic</h1>
   <a href="addcontact.html" class="header-plus" title="Add Contact">➕</a>
 </header>
@@ -139,7 +139,7 @@ if (storedPass !== PASSWORD) {
 <script>
 /* ================= CONFIG ================= */
 const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu0ygRaMYEG3XL6eQ/edit?gid=671174622";
+  "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
 
 /* ================= HELPERS ================= */
 function csvUrl(url) {
@@ -241,8 +241,8 @@ async function loadVisitors() {
     const first = cols[1];
     const last = cols[2];
     const phone = cols[3];
+    const decade = cols[7];
     const smsAllowed = cols[4].toLowerCase() !== "no";
-    const decade = cols[7]; // Column 7 = Decade
 
     const children = [];
     if (cols[11].toLowerCase() === "yes") {
@@ -259,8 +259,7 @@ async function loadVisitors() {
     const info = document.createElement("div");
     info.className = "visitor-info";
     info.innerHTML = `
-      <strong>${first} ${last}</strong> 
-      <span style="font-size: 12px; font-weight: normal;">(${decade})</span><br>
+      <strong>${first} ${last}, ${decade}</strong><br>
       ${formatPhone(phone)}
       ${children.length ? `<div class="children">Children: ${children.join(", ")}</div>` : ""}
       <div class="children" style="color: green;">
