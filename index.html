@@ -139,7 +139,7 @@ if (storedPass !== PASSWORD) {
 <script>
 /* ================= CONFIG ================= */
 const SHEET_URL =
-"https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
+  "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
 
 /* ================= HELPERS ================= */
 function csvUrl(url) {
@@ -165,4 +165,133 @@ function parseSheetDate(str) {
 
 function sameDay(d1, d2) {
   return d1.getFullYear() === d2.getFullYear() &&
-         d1.getMonth() ===
+         d1.getMonth() === d2.getMonth() &&
+         d1.getDate() === d2.getDate();
+}
+
+function parseCsvCleaned(text) {
+  text = text.replace(/"/g, "");
+  return text
+    .split(/\r?\n/)
+    .map(r => r.split(",").map(c => c.trim()))
+    .filter(r => r.length > 1);
+}
+
+function formatPhone(phone) {
+  const d = phone.replace(/\D/g, "");
+  return d.length === 10
+    ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`
+    : phone;
+}
+
+/* ================= MAIN ================= */
+const datePicker = document.getElementById("datePicker");
+const messageInput = document.getElementById("message");
+const greetingInput = document.getElementById("greeting");
+
+// Default greeting/message
+const DEFAULT_GREETING = "Hey";
+const DEFAULT_MESSAGE = "It was great having you in worship with us today.\nI look forward to getting to know you.";
+
+// Load saved greeting/message or use defaults
+greetingInput.value = localStorage.getItem("vm_greeting") || DEFAULT_GREETING;
+messageInput.value = localStorage.getItem("vm_message") || DEFAULT_MESSAGE;
+
+// Save greeting/message to localStorage
+messageInput.addEventListener("input", () => localStorage.setItem("vm_message", messageInput.value));
+greetingInput.addEventListener("input", () => localStorage.setItem("vm_greeting", greetingInput.value));
+
+// Load local date on page load
+window.addEventListener("DOMContentLoaded", () => {
+  const today = new Date();
+  const localDate = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
+  datePicker.value = localDate;
+  loadVisitors();
+});
+
+// Automatically load visitors when date changes
+datePicker.addEventListener("change", loadVisitors);
+
+async function loadVisitors() {
+  const list = document.getElementById("visitorList");
+  list.innerHTML = "Loading...";
+
+  const dateValue = datePicker.value;
+  if (!dateValue) {
+    list.innerHTML = "Select a date";
+    return;
+  }
+
+  const [y, m, d] = dateValue.split("-").map(Number);
+  const selected = new Date(y, m - 1, d);
+
+  const res = await fetch(csvUrl(SHEET_URL));
+  const rows = parseCsvCleaned(await res.text());
+
+  list.innerHTML = "";
+
+  rows.slice(1).forEach(cols => {
+    if (cols.length < 12) return;
+
+    const visitDate = parseSheetDate(cols[0]);
+    if (!visitDate || !sameDay(visitDate, selected)) return;
+
+    const first = cols[1];
+    const last = cols[2];
+    const phone = cols[3];
+    const smsAllowed = cols[4].toLowerCase() !== "no";
+
+    const children = [];
+    if (cols[11].toLowerCase() === "yes") {
+      for (let i = 12; i < cols.length; i += 2) {
+        const name = cols[i];
+        const age = cols[i + 1];
+        if (name && age) children.push(`${name} (${age})`);
+      }
+    }
+
+    const div = document.createElement("div");
+    div.className = "visitor";
+
+    const info = document.createElement("div");
+    info.className = "visitor-info";
+    info.innerHTML = `
+      <strong>${first} ${last}</strong><br>
+      ${formatPhone(phone)}
+      ${children.length ? `<div class="children">Children: ${children.join(", ")}</div>` : ""}
+      <div class="children" style="color: green;">
+        ${cols[9]}, ${cols[10]}
+      </div>
+    `;
+
+    const btn = document.createElement("button");
+    btn.textContent = "SMS";
+    btn.className = smsAllowed ? "sms-enabled" : "sms-disabled";
+    btn.disabled = !smsAllowed;
+
+    btn.addEventListener("click", () => {
+      sendSms(phone, first);
+    });
+
+    div.append(info, btn);
+    list.appendChild(div);
+  });
+
+  if (!list.children.length) {
+    list.innerHTML = "No visitors found for this date";
+  }
+}
+
+/* ================= SMS ================= */
+function sendSms(phone, first) {
+  const greeting = greetingInput.value;
+  const message = messageInput.value;
+  const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
+  window.location.href = `sms:${phone}?body=${body}`;
+}
+</script>
+
+</body>
+</html>
