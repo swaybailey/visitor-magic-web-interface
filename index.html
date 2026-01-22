@@ -11,6 +11,7 @@ body {
   margin: 0;
   padding: 16px;
   background: #f5f5f5;
+  display: none; /* 🔒 hidden until authenticated */
 }
 
 header {
@@ -26,18 +27,10 @@ header h1 {
   text-align: center;
 }
 
-header a, .header-plus {
+.header-plus {
   text-decoration: none;
   font-size: 20px;
-  margin: 0 8px;
-}
-
-.header-plus {
   margin-left: auto;
-}
-
-.controls {
-  margin-bottom: 16px;
 }
 
 .controls label {
@@ -57,7 +50,6 @@ input[type="text"], textarea {
   padding: 8px;
   margin-top: 4px;
   font-size: 16px;
-  display: block;
 }
 
 .visitor {
@@ -67,7 +59,6 @@ input[type="text"], textarea {
   border-radius: 6px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
 }
 
 .visitor-info {
@@ -103,16 +94,16 @@ input[type="text"], textarea {
 <script src="auth.js"></script>
 
 <script>
-/* ===== CONFIG VALIDATION ===== */
+/* ===== HARD AUTH GATE ===== */
 if (!window.VM_CONFIG || !VM_CONFIG.PASSWORD || !VM_CONFIG.SHEET_URL) {
-  document.body.innerHTML = "<h2 style='padding:20px'>Configuration missing</h2>";
-  throw new Error("VM_CONFIG missing");
+  document.body.style.display = "block";
+  document.body.innerHTML = "<h2>Configuration missing</h2>";
+  throw new Error("Missing VM_CONFIG");
 }
 
 const PASSWORD = VM_CONFIG.PASSWORD;
 const SHEET_URL = VM_CONFIG.SHEET_URL;
 
-/* ===== PASSWORD PROTECTION ===== */
 const storedPass = sessionStorage.getItem("vm_pass");
 
 if (storedPass !== PASSWORD) {
@@ -120,28 +111,31 @@ if (storedPass !== PASSWORD) {
   const password = prompt(`Hello ${username || "user"}, enter your password:`);
 
   if (password !== PASSWORD) {
-    document.body.innerHTML = "<h2 style='padding:20px'>Access Denied</h2>";
+    document.body.style.display = "block";
+    document.body.innerHTML = "<h2>Access Denied</h2>";
     throw new Error("Access denied");
   }
 
   sessionStorage.setItem("vm_pass", PASSWORD);
 }
+
+/* ✅ AUTH SUCCESS — show page */
+document.body.style.display = "block";
 </script>
 
 <header>
-  <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank" title="Open original sheet">📄</a>
   <h1>Visitor Magic</h1>
   <a href="addcontact.html" class="header-plus" title="Add Contact">➕</a>
 </header>
 
 <div class="controls">
-  <label for="datePicker">Date</label>
+  <label>Date</label>
   <input type="date" id="datePicker">
 
-  <label for="greeting">Greeting</label>
+  <label>Greeting</label>
   <input type="text" id="greeting">
 
-  <label for="message">Message</label>
+  <label>Message</label>
   <textarea id="message" rows="4"></textarea>
 </div>
 
@@ -161,32 +155,21 @@ function csvUrl(url) {
 function parseSheetDate(str) {
   if (!str) return null;
   const m = str.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})/
   );
   if (!m) return null;
-
-  return new Date(m[3], m[1] - 1, m[2], m[4], m[5], m[6]);
+  return new Date(m[3], m[1] - 1, m[2]);
 }
 
-function sameDay(d1, d2) {
-  return d1.getFullYear() === d2.getFullYear() &&
-         d1.getMonth() === d2.getMonth() &&
-         d1.getDate() === d2.getDate();
+function sameDay(a, b) {
+  return a.toDateString() === b.toDateString();
 }
 
 function parseCsvCleaned(text) {
-  text = text.replace(/"/g, "");
-  return text
+  return text.replace(/"/g, "")
     .split(/\r?\n/)
     .map(r => r.split(",").map(c => c.trim()))
     .filter(r => r.length > 1);
-}
-
-function formatPhone(phone) {
-  const d = phone.replace(/\D/g, "");
-  return d.length === 10
-    ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`
-    : phone;
 }
 
 /* ================= MAIN ================= */
@@ -195,95 +178,49 @@ const datePicker = document.getElementById("datePicker");
 const greetingInput = document.getElementById("greeting");
 const messageInput = document.getElementById("message");
 
-const DEFAULT_GREETING = "Hey";
-const DEFAULT_MESSAGE =
+greetingInput.value = localStorage.getItem("vm_greeting") || "Hey";
+messageInput.value = localStorage.getItem("vm_message") ||
 "It was great having you in worship with us today.\nI look forward to getting to know you.";
 
-greetingInput.value = localStorage.getItem("vm_greeting") || DEFAULT_GREETING;
-messageInput.value = localStorage.getItem("vm_message") || DEFAULT_MESSAGE;
+greetingInput.oninput = () => localStorage.setItem("vm_greeting", greetingInput.value);
+messageInput.oninput = () => localStorage.setItem("vm_message", messageInput.value);
 
-greetingInput.addEventListener("input", () =>
-  localStorage.setItem("vm_greeting", greetingInput.value)
-);
-messageInput.addEventListener("input", () =>
-  localStorage.setItem("vm_message", messageInput.value)
-);
-
-window.addEventListener("DOMContentLoaded", () => {
-  const today = new Date();
-  datePicker.value =
-    today.getFullYear() + "-" +
-    String(today.getMonth() + 1).padStart(2, "0") + "-" +
-    String(today.getDate()).padStart(2, "0");
+window.onload = () => {
+  const d = new Date();
+  datePicker.value = d.toISOString().slice(0,10);
   loadVisitors();
-});
+};
 
-datePicker.addEventListener("change", loadVisitors);
+datePicker.onchange = loadVisitors;
 
 async function loadVisitors() {
   const list = document.getElementById("visitorList");
   list.innerHTML = "Loading...";
 
-  const [y, m, d] = datePicker.value.split("-").map(Number);
-  const selected = new Date(y, m - 1, d);
-
+  const selected = new Date(datePicker.value);
   const res = await fetch(csvUrl(SHEET_URL));
   const rows = parseCsvCleaned(await res.text());
 
   list.innerHTML = "";
 
-  rows.slice(1).forEach(cols => {
-    const visitDate = parseSheetDate(cols[0]);
-    if (!visitDate || !sameDay(visitDate, selected)) return;
-
-    const first = cols[1];
-    const last = cols[2];
-    const decade = cols[7];
-    const phone = cols[3];
-    const smsAllowed = cols[4].toLowerCase() !== "no";
-
-    const children = [];
-    if (cols[11].toLowerCase() === "yes") {
-      for (let i = 12; i < cols.length; i += 2) {
-        if (cols[i] && cols[i + 1]) {
-          children.push(`${cols[i]} (${cols[i + 1]})`);
-        }
-      }
-    }
+  rows.slice(1).forEach(c => {
+    const visit = parseSheetDate(c[0]);
+    if (!visit || !sameDay(visit, selected)) return;
 
     const div = document.createElement("div");
     div.className = "visitor";
-
-    const info = document.createElement("div");
-    info.className = "visitor-info";
-    info.innerHTML = `
-      <strong>${first} ${last}</strong>
-      <span style="font-size:12px;color:#666"> (${decade})</span><br>
-      ${formatPhone(phone)}
-      ${children.length ? `<div class="children">Children: ${children.join(", ")}</div>` : ""}
-      <div class="children" style="color: green;">
-        ${cols[9]}, ${cols[10]}
+    div.innerHTML = `
+      <div class="visitor-info">
+        <strong>${c[1]} ${c[2]}</strong>
+        <span style="font-size:12px;color:#666"> (${c[7]})</span><br>
+        ${c[9]}, ${c[10]}
       </div>
+      <button class="sms-enabled">SMS</button>
     `;
-
-    const btn = document.createElement("button");
-    btn.textContent = "SMS";
-    btn.className = smsAllowed ? "sms-enabled" : "sms-disabled";
-    btn.disabled = !smsAllowed;
-    btn.onclick = () => sendSms(phone, first);
-
-    div.append(info, btn);
     list.appendChild(div);
   });
 
-  if (!list.children.length) {
-    list.innerHTML = "No visitors found for this date";
-  }
-}
-
-function sendSms(phone, first) {
-  const body = encodeURIComponent(`${greetingInput.value} ${first}, ${messageInput.value}`);
-  window.location.href = `sms:${phone}?body=${body}`;
+  if (!list.children.length) list.innerHTML = "No visitors found";
 }
 </script>
 
