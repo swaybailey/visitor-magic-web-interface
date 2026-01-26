@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Visitor Magic</title>
 
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#47b80f">
+
 <style>
 body {
   font-family: system-ui, sans-serif;
@@ -47,7 +51,7 @@ header a, .header-plus {
 }
 
 input[type="date"] {
-  width: 150px; /* smaller width */
+  width: 150px;
   padding: 6px;
   font-size: 16px;
 }
@@ -101,11 +105,11 @@ input[type="text"], textarea {
 
 <script>
 // ======= USERNAME + PASSWORD PROTECTION =======
-const PASSWORD = "mustangriverglassfork"; // only the password is checked
+const PASSWORD = "mustangriverglassfork";
 const storedPass = sessionStorage.getItem("vm_pass");
 
 if (storedPass !== PASSWORD) {
-  const username = prompt("Enter your username:"); // cosmetic
+  const username = prompt("Enter your username:");
   const password = prompt(`Hello ${username || "user"}, enter your password:`);
 
   if (password !== PASSWORD) {
@@ -189,42 +193,35 @@ const datePicker = document.getElementById("datePicker");
 const messageInput = document.getElementById("message");
 const greetingInput = document.getElementById("greeting");
 
-// Default greeting/message
 const DEFAULT_GREETING = "Hey";
 const DEFAULT_MESSAGE = "It was great having you in worship with us today.\nI look forward to getting to know you.";
 
-// Load saved greeting/message or use defaults
 greetingInput.value = localStorage.getItem("vm_greeting") || DEFAULT_GREETING;
 messageInput.value = localStorage.getItem("vm_message") || DEFAULT_MESSAGE;
 
-// Save greeting/message to localStorage
-messageInput.addEventListener("input", () => localStorage.setItem("vm_message", messageInput.value));
-greetingInput.addEventListener("input", () => localStorage.setItem("vm_greeting", greetingInput.value));
+messageInput.addEventListener("input", () =>
+  localStorage.setItem("vm_message", messageInput.value)
+);
+greetingInput.addEventListener("input", () =>
+  localStorage.setItem("vm_greeting", greetingInput.value)
+);
 
-// Load local date on page load
 window.addEventListener("DOMContentLoaded", () => {
   const today = new Date();
-  const localDate = today.getFullYear() + '-' +
+  datePicker.value =
+    today.getFullYear() + '-' +
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
-  datePicker.value = localDate;
   loadVisitors();
 });
 
-// Automatically load visitors when date changes
 datePicker.addEventListener("change", loadVisitors);
 
 async function loadVisitors() {
   const list = document.getElementById("visitorList");
   list.innerHTML = "Loading...";
 
-  const dateValue = datePicker.value;
-  if (!dateValue) {
-    list.innerHTML = "Select a date";
-    return;
-  }
-
-  const [y, m, d] = dateValue.split("-").map(Number);
+  const [y, m, d] = datePicker.value.split("-").map(Number);
   const selected = new Date(y, m - 1, d);
 
   const res = await fetch(csvUrl(SHEET_URL));
@@ -247,23 +244,19 @@ async function loadVisitors() {
     const children = [];
     if (cols[11].toLowerCase() === "yes") {
       for (let i = 12; i < cols.length; i += 2) {
-        const name = cols[i];
-        const age = cols[i + 1];
-        if (name && age) children.push(`${name} (${age})`);
+        if (cols[i] && cols[i+1]) children.push(`${cols[i]} (${cols[i+1]})`);
       }
     }
 
     const div = document.createElement("div");
     div.className = "visitor";
 
-    const info = document.createElement("div");
-    info.className = "visitor-info";
-    info.innerHTML = `
-      <strong>${first} ${last}</strong> <span style="font-size: 12px; font-weight: normal;">(${decade})</span><br>
-      ${formatPhone(phone)}
-      ${children.length ? `<div class="children">Children: ${children.join(", ")}</div>` : ""}
-      <div class="children" style="color: green;">
-        ${cols[9]}, ${cols[10]}
+    div.innerHTML = `
+      <div class="visitor-info">
+        <strong>${first} ${last}</strong> <span style="font-size:12px">(${decade})</span><br>
+        ${formatPhone(phone)}
+        ${children.length ? `<div class="children">Children: ${children.join(", ")}</div>` : ""}
+        <div class="children" style="color: green;">${cols[9]}, ${cols[10]}</div>
       </div>
     `;
 
@@ -271,29 +264,29 @@ async function loadVisitors() {
     btn.textContent = "SMS";
     btn.className = smsAllowed ? "sms-enabled" : "sms-disabled";
     btn.disabled = !smsAllowed;
+    btn.onclick = () => sendSms(phone, first);
 
-    btn.addEventListener("click", () => {
-      sendSms(phone, first);
-    });
-
-    div.append(info, btn);
+    div.appendChild(btn);
     list.appendChild(div);
   });
 
-  if (!list.children.length) {
-    list.innerHTML = "No visitors found for this date";
-  }
+  if (!list.children.length) list.innerHTML = "No visitors found for this date";
 }
 
-/* ================= SMS ================= */
 function sendSms(phone, first) {
-  const greeting = greetingInput.value;
-  const message = messageInput.value;
-  const body = encodeURIComponent(`${greeting} ${first}, ${message}`);
+  const body = encodeURIComponent(`${greetingInput.value} ${first}, ${messageInput.value}`);
   window.location.href = `sms:${phone}?body=${body}`;
+}
+</script>
+
+<!-- Service Worker (no caching) -->
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(() => console.log('Service Worker registered'))
+    .catch(err => console.error('Service Worker error:', err));
 }
 </script>
 
 </body>
 </html>
-
