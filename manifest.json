@@ -1,7 +1,8 @@
 {
   "name": "Visitor Magic",
   "short_name": "VisitorMagic",
-  "start_url": "index.html",
+  "start_url": "/visitor-magic-web-interface/",
+  "scope": "/visitor-magic-web-interface/",
   "display": "standalone",
   "background_color": "#f5f5f5",
   "theme_color": "#47b80f",
@@ -18,3 +19,4 @@
     }
   ]
 }
+
