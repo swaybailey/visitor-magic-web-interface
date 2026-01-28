@@ -1,135 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitor Magic</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Visitor Magic</title>
 
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      margin: 0;
-      padding: 16px;
-      background: #f5f5f5;
-    }
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    padding: 16px;
+    background: #f5f5f5;
+  }
 
-    header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 16px;
-    }
+  header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+  }
 
-    header h1 {
-      flex: 1;
-      margin: 0;
-      font-size: 24px;
-      text-align: center;
-    }
+  header h1 {
+    flex: 1;
+    margin: 0;
+    font-size: 24px;
+    text-align: center;
+  }
 
-    header a, .header-plus {
-      text-decoration: none;
-      font-size: 20px;
-      margin: 0 8px;
-    }
+  header a, .header-plus, #sheetIcon {
+    text-decoration: none;
+    font-size: 20px;
+    margin: 0 8px;
+    cursor: pointer;
+  }
 
-    .header-plus {
-      margin-left: auto;
-    }
+  .header-plus {
+    margin-left: auto;
+  }
 
-    #userIcon {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      margin-right: 8px;
-      cursor: pointer;
-      display: none;
-      object-fit: cover;
-    }
+  #userIcon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin-right: 8px;
+    cursor: pointer;
+  }
 
-    .controls {
-      margin-bottom: 16px;
-    }
+  .controls {
+    margin-bottom: 16px;
+  }
 
-    .controls label {
-      font-weight: bold;
-      display: block;
-      margin-top: 8px;
-    }
+  .controls label {
+    font-weight: bold;
+    display: block;
+    margin-top: 8px;
+  }
 
-    input[type="date"] {
-      width: 150px;
-      padding: 6px;
-      font-size: 16px;
-    }
+  input[type="date"] {
+    width: 150px;
+    padding: 6px;
+    font-size: 16px;
+  }
 
-    input[type="text"], textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      font-size: 16px;
-      display: block;
-    }
+  input[type="text"], textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    font-size: 16px;
+    display: block;
+  }
 
-    .visitor {
-      background: white;
-      padding: 12px;
-      margin-bottom: 8px;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+  .visitor {
+    background: white;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-    .visitor-info {
-      flex: 1;
-    }
+  .visitor-info {
+    flex: 1;
+  }
 
-    .children {
-      color: red;
-      font-size: 13px;
-      margin-top: 4px;
-    }
+  .children {
+    color: red;
+    font-size: 13px;
+    margin-top: 4px;
+  }
 
-    .sms-enabled {
-      background: #47b80f;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 8px 10px;
-      cursor: pointer;
-    }
+  .sms-enabled {
+    background: #47b80f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 8px 10px;
+  }
 
-    .sms-disabled {
-      background: #ccc;
-      color: #666;
-      border: none;
-      border-radius: 4px;
-      padding: 8px 10px;
-    }
-
-    /* login UI */
-    #loginBox {
-      background: white;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.08);
-    }
-
-    #googleSignInBtn {
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      background: #fff;
-      cursor: pointer;
-    }
-
-    #statusLine {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #444;
-    }
-  </style>
+  .sms-disabled {
+    background: #ccc;
+    color: #666;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
+</style>
 </head>
 
 <body>
@@ -137,14 +113,9 @@
 <header>
   <img id="userIcon" src="" alt="User" />
   <h1>Visitor Magic</h1>
-  <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank">📄</a>
+  <a id="sheetIcon" href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank">📄</a>
   <a href="addcontact.html" class="header-plus">➕</a>
 </header>
-
-<div id="loginBox">
-  <button id="googleSignInBtn">Sign in with Google</button>
-  <div id="statusLine"></div>
-</div>
 
 <div class="controls" id="appControls" style="display:none;">
   <label for="datePicker">Date</label>
@@ -159,6 +130,7 @@
 
 <div id="visitorList"></div>
 
+<!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
@@ -168,116 +140,142 @@ const SHEET_RANGE = "Form Responses 1!A:V";
 
 let accessToken = null;
 let tokenClient = null;
-
 const userIcon = document.getElementById("userIcon");
-const googleSignInBtn = document.getElementById("googleSignInBtn");
-const appControls = document.getElementById("appControls");
-const statusLine = document.getElementById("statusLine");
 
-function setStatus(msg){statusLine.textContent=msg||"";}
-function showAppUI(show){appControls.style.display=show?"block":"none";}
+function showAppUI(show) {
+  document.getElementById("appControls").style.display = show ? "block" : "none";
+}
 
-function initTokenClient(){
+function setUserIcon(imgUrl) {
+  userIcon.src = imgUrl || "https://www.firstblueridge.org/images/default-user.png";
+}
+
+function initTokenClient() {
+  if (!window.google || !google.accounts || !google.accounts.oauth2) return false;
+
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: "https://www.googleapis.com/auth/spreadsheets.readonly",
-    callback: (resp)=>{
-      if(!resp||!resp.access_token){setStatus("Sign-in failed."); return;}
+    callback: (resp) => {
+      if (!resp || !resp.access_token) return;
       accessToken = resp.access_token;
       localStorage.setItem("vm_access_token", accessToken);
-      googleSignInBtn.style.display = "none";
-      userIcon.src = `https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png`;
-      userIcon.style.display = "inline-block";
       showAppUI(true);
+      fetchUserProfile();
       loadVisitors();
     }
   });
+
+  return true;
 }
 
-googleSignInBtn.addEventListener("click",()=>{
-  if(!tokenClient){initTokenClient();}
-  tokenClient.requestAccessToken({prompt:"consent"});
+// Fetch basic profile info for user icon
+async function fetchUserProfile() {
+  if (!accessToken) return;
+  try {
+    const res = await fetch("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", {
+      headers: { "Authorization": `Bearer ${accessToken}` }
+    });
+    const data = await res.json();
+    setUserIcon(data.picture);
+  } catch(e) {
+    setUserIcon(""); // fallback
+  }
+}
+
+// Sign in or sign out on icon click
+userIcon.addEventListener("click", () => {
+  if (!accessToken) {
+    if (!tokenClient) initTokenClient();
+    tokenClient.requestAccessToken({ prompt: "consent" });
+  } else {
+    accessToken = null;
+    localStorage.removeItem("vm_access_token");
+    setUserIcon("");
+    showAppUI(false);
+    document.getElementById("visitorList").innerHTML = "";
+  }
 });
 
-userIcon.addEventListener("click",()=>{
-  accessToken=null;
-  localStorage.removeItem("vm_access_token");
-  userIcon.style.display="none";
-  showAppUI(false);
-  document.getElementById("visitorList").innerHTML="";
-  googleSignInBtn.style.display="inline-block";
-  setStatus("Signed out.");
-});
-
-window.addEventListener("DOMContentLoaded",()=>{
-  const saved=localStorage.getItem("vm_access_token");
-  if(saved){
-    accessToken=saved;
-    googleSignInBtn.style.display="none";
-    userIcon.src=`https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png`;
-    userIcon.style.display="inline-block";
+// Restore token if previously signed in
+window.addEventListener("DOMContentLoaded", () => {
+  const savedToken = localStorage.getItem("vm_access_token");
+  if (savedToken) {
+    accessToken = savedToken;
     showAppUI(true);
+    fetchUserProfile();
     loadVisitors();
   }
 });
 
-/* --- Remaining helpers and loadVisitors / SMS functions --- */
-function parseSheetDate(str){if(!str)return null;const m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/);if(!m)return null;return new Date(m[3],m[1]-1,m[2],m[4],m[5],m[6]);}
+/* ====================== EXISTING HELPERS ====================== */
+function parseSheetDate(str) {
+  if (!str) return null;
+  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/);
+  if (!m) return null;
+  return new Date(m[3], m[1]-1, m[2], m[4], m[5], m[6]);
+}
 function sameDay(d1,d2){return d1.getFullYear()===d2.getFullYear()&&d1.getMonth()===d2.getMonth()&&d1.getDate()===d2.getDate();}
-function formatPhone(p){const d=(p||"").replace(/\D/g,"");return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:p||"";}
+function formatPhone(phone){const d=(phone||"").replace(/\D/g,"");return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:(phone||"");}
 
-const datePicker=document.getElementById("datePicker");
-const messageInput=document.getElementById("message");
-const greetingInput=document.getElementById("greeting");
-const DEFAULT_GREETING="Hey";
-const DEFAULT_MESSAGE="It was great having you in worship with us today.\nI look forward to getting to know you.";
-greetingInput.value=localStorage.getItem("vm_greeting")||DEFAULT_GREETING;
-messageInput.value=localStorage.getItem("vm_message")||DEFAULT_MESSAGE;
+/* ====================== VISITOR LOADING ====================== */
+const datePicker = document.getElementById("datePicker");
+const messageInput = document.getElementById("message");
+const greetingInput = document.getElementById("greeting");
+
+const DEFAULT_GREETING = "Hey";
+const DEFAULT_MESSAGE = "It was great having you in worship with us today.\nI look forward to getting to know you.";
+greetingInput.value = localStorage.getItem("vm_greeting") || DEFAULT_GREETING;
+messageInput.value = localStorage.getItem("vm_message") || DEFAULT_MESSAGE;
 messageInput.addEventListener("input",()=>localStorage.setItem("vm_message",messageInput.value));
 greetingInput.addEventListener("input",()=>localStorage.setItem("vm_greeting",greetingInput.value));
+
 window.addEventListener("DOMContentLoaded",()=>{
   const today=new Date();
-  datePicker.value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  datePicker.value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  if(accessToken) loadVisitors();
 });
-\async function fetchSheetValues(){
+datePicker.addEventListener("change",()=>{if(accessToken) loadVisitors();});
+
+async function fetchSheetValues() {
+  if(!accessToken) throw new Error("Not signed in");
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_RANGE)}`;
   const res=await fetch(url,{headers:{"Authorization":`Bearer ${accessToken}`}});
-  if(!res.ok){throw new Error(`Sheets API error (${res.status})`);}
+  if(!res.ok) throw new Error(`Sheets API error (${res.status})`);
   const data=await res.json();
   return data.values||[];
 }
 
-async function loadVisitors(){
+async function loadVisitors() {
   const list=document.getElementById("visitorList");
   if(!accessToken){list.innerHTML="Please sign in first.";return;}
   list.innerHTML="Loading...";
   const [y,m,d]=datePicker.value.split("-").map(Number);
   const selected=new Date(y,m-1,d);
   let rows;
-  try{rows=await fetchSheetValues();}catch(e){console.error(e);list.innerHTML="Error loading Google Sheet.";return;}
+  try{rows=await fetchSheetValues();}catch(e){console.error(e);list.innerHTML="Error loading sheet";return;}
   list.innerHTML="";
-  if(!rows.length){list.innerHTML="No data found in sheet.";return;}
+  if(!rows.length){list.innerHTML="No data found.";return;}
   rows.slice(1).forEach(cols=>{
     if(!cols||cols.length<12)return;
     const visitDate=parseSheetDate(cols[0]);
     if(!visitDate||!sameDay(visitDate,selected))return;
-    const first=cols[1]||"",last=cols[2]||"",phone=cols[3]||"",decade=cols[7]||"",smsAllowed=(cols[4]||"").toLowerCase()!=="no";
+    const first=cols[1]||"";
+    const last=cols[2]||"";
+    const phone=cols[3]||"";
+    const decade=cols[7]||"";
+    const smsAllowed=(cols[4]||"").toLowerCase()!=="no";
     const children=[];
-    if((cols[11]||"").toLowerCase()==="yes")for(let i=12;i<cols.length;i+=2){const name=cols[i],age=cols[i+1];if(name&&age)children.push(`${name} (${age})`);}
-    const div=document.createElement("div");
-    div.className="visitor";
-    const info=document.createElement("div");
-    info.className="visitor-info";
-    info.innerHTML=`<strong>${first} ${last}</strong> <span style="font-size:12px">(${decade})</span><br>${formatPhone(phone)}${children.length?`<div class="children">Children: ${children.join(", ")}</div>`:""}<div class="children" style="color:green">${cols[9]||""}, ${cols[10]||""}</div>`;
-    const btn=document.createElement("button");
-    btn.textContent="SMS";
-    btn.className=smsAllowed?"sms-enabled":"sms-disabled";
-    btn.disabled=!smsAllowed;
-    btn.addEventListener("click",()=>sendSms(phone,first));
-    div.append(info,btn);
-    list.appendChild(div);
+    if((cols[11]||"").toLowerCase()==="yes"){
+      for(let i=12;i<cols.length;i+=2){const name=cols[i];const age=cols[i+1];if(name&&age)children.push(`${name} (${age})`);}
+    }
+    const div=document.createElement("div");div.className="visitor";
+    const info=document.createElement("div");info.className="visitor-info";
+    info.innerHTML=`<strong>${first} ${last}</strong> <span style="font-size:12px;font-weight:normal">(${decade})</span><br>${formatPhone(phone)}${children.length?`<div class="children">Children: ${children.join(", ")}</div>`:""}<div class="children" style="color:green">${(cols[9]||"")}, ${(cols[10]||"")}</div>`;
+    const btn=document.createElement("button");btn.textContent="SMS";btn.className=smsAllowed?"sms-enabled":"sms-disabled";btn.disabled=!smsAllowed;btn.addEventListener("click",()=>sendSms(phone,first));
+    div.append(info,btn);list.appendChild(div);
   });
-  if(!list.children.length)list.innerHTML="No visitors found for this date";
+  if(!list.children.length) list.innerHTML="No visitors found for this date";
 }
 
 function sendSms(phone,first){const body=encodeURIComponent(`${greetingInput.value} ${first}, ${messageInput.value}`);window.location.href=`sms:${phone}?body=${body}`;}
