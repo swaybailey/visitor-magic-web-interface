@@ -131,7 +131,7 @@ input[type="text"], textarea {
   <a href="addcontact.html" class="header-plus" title="Add Contact">➕</a>
 </header>
 
-<!-- ===== Compact signed-in box ===== -->
+<!-- Compact signed-in box -->
 <div id="signedInBox" style="display:none;"></div>
 
 <div class="controls">
@@ -161,7 +161,7 @@ function parseSheetDate(str) {
   if (!str) return null;
   const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/);
   if (!m) return null;
-  return new Date(m[3], m[1] - 1, m[2], m[4], m[5], m[6]);
+  return new Date(m[3], m[1]-1, m[2], m[4], m[5], m[6]);
 }
 
 function sameDay(d1, d2) {
@@ -172,34 +172,12 @@ function sameDay(d1, d2) {
 
 function parseCsvCleaned(text) {
   text = text.replace(/"/g, "");
-  return text
-    .split(/\r?\n/)
-    .map(r => r.split(",").map(c => c.trim()))
-    .filter(r => r.length > 1);
+  return text.split(/\r?\n/).map(r => r.split(",").map(c => c.trim())).filter(r => r.length > 1);
 }
 
 function formatPhone(phone) {
   const d = phone.replace(/\D/g, "");
-  return d.length === 10
-    ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`
-    : phone;
-}
-
-/* ================= SIGNED IN BOX ================= */
-function showSignedIn(user) {
-  const box = document.getElementById("signedInBox");
-  box.style.display = "flex";
-  box.innerHTML = `
-    <img src="${user.photo}" alt="Profile">
-    <div class="user-info">Signed in as ${user.name}</div>
-    <a href="#" id="signOutLink">Sign out</a>
-  `;
-  document.getElementById("signOutLink").onclick = () => {
-    gapi.auth2.getAuthInstance().signOut().then(() => {
-      box.style.display = "none";
-      window.location.reload();
-    });
-  };
+  return d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : phone;
 }
 
 /* ================= MAIN ================= */
@@ -213,12 +191,8 @@ const DEFAULT_MESSAGE = "It was great having you in worship with us today.\nI lo
 greetingInput.value = localStorage.getItem("vm_greeting") || DEFAULT_GREETING;
 messageInput.value = localStorage.getItem("vm_message") || DEFAULT_MESSAGE;
 
-messageInput.addEventListener("input", () =>
-  localStorage.setItem("vm_message", messageInput.value)
-);
-greetingInput.addEventListener("input", () =>
-  localStorage.setItem("vm_greeting", greetingInput.value)
-);
+messageInput.addEventListener("input", () => localStorage.setItem("vm_message", messageInput.value));
+greetingInput.addEventListener("input", () => localStorage.setItem("vm_greeting", greetingInput.value));
 
 window.addEventListener("DOMContentLoaded", () => {
   const today = new Date();
@@ -235,8 +209,8 @@ async function loadVisitors() {
   const list = document.getElementById("visitorList");
   list.innerHTML = "Loading...";
 
-  const [y, m, d] = datePicker.value.split("-").map(Number);
-  const selected = new Date(y, m - 1, d);
+  const [y,m,d] = datePicker.value.split("-").map(Number);
+  const selected = new Date(y,m-1,d);
 
   const res = await fetch(csvUrl(SHEET_URL));
   const rows = parseCsvCleaned(await res.text());
@@ -244,10 +218,10 @@ async function loadVisitors() {
   list.innerHTML = "";
 
   rows.slice(1).forEach(cols => {
-    if (cols.length < 12) return;
+    if(cols.length<12) return;
 
     const visitDate = parseSheetDate(cols[0]);
-    if (!visitDate || !sameDay(visitDate, selected)) return;
+    if(!visitDate || !sameDay(visitDate,selected)) return;
 
     const first = cols[1];
     const last = cols[2];
@@ -256,56 +230,59 @@ async function loadVisitors() {
     const smsAllowed = cols[4].toLowerCase() !== "no";
 
     const children = [];
-    if (cols[11].toLowerCase() === "yes") {
-      for (let i = 12; i < cols.length; i += 2) {
-        if (cols[i] && cols[i+1]) {
-          children.push(`${cols[i]} (${cols[i+1]})`);
-        }
+    if(cols[11].toLowerCase() === "yes") {
+      for(let i=12;i<cols.length;i+=2) {
+        if(cols[i] && cols[i+1]) children.push(`${cols[i]} (${cols[i+1]})`);
       }
     }
 
     const div = document.createElement("div");
-    div.className = "visitor";
-
+    div.className="visitor";
     div.innerHTML = `
       <div class="visitor-info">
         <strong>${first} ${last}</strong> <span style="font-size:12px">(${decade})</span><br>
         ${formatPhone(phone)}
-        ${children.length ? `<div class="children">Children: ${children.join(", ")}</div>` : ""}
+        ${children.length?`<div class="children">Children: ${children.join(", ")}</div>`:""}
         <div class="children" style="color: green;">${cols[9]}, ${cols[10]}</div>
       </div>
     `;
-
-    const btn = document.createElement("button");
-    btn.textContent = "SMS";
-    btn.className = smsAllowed ? "sms-enabled" : "sms-disabled";
-    btn.disabled = !smsAllowed;
-    btn.onclick = () => sendSms(phone, first);
-
+    const btn=document.createElement("button");
+    btn.textContent="SMS";
+    btn.className=smsAllowed?"sms-enabled":"sms-disabled";
+    btn.disabled=!smsAllowed;
+    btn.onclick=()=>sendSms(phone,first);
     div.appendChild(btn);
     list.appendChild(div);
   });
 
-  if (!list.children.length) list.innerHTML = "No visitors found for this date";
+  if(!list.children.length) list.innerHTML="No visitors found for this date";
 }
 
-function sendSms(phone, first) {
-  const body = encodeURIComponent(`${greetingInput.value} ${first}, ${messageInput.value}`);
-  window.location.href = `sms:${phone}?body=${body}`;
+function sendSms(phone,first){
+  const body=encodeURIComponent(`${greetingInput.value} ${first}, ${messageInput.value}`);
+  window.location.href=`sms:${phone}?body=${body}`;
 }
 
-/* ================= Google Sign-In Initialization ================= */
-function onSignIn(googleUser) {
+/* ================= Google Sign-In Compact Display ================= */
+function onSignIn(googleUser){
   const profile = googleUser.getBasicProfile();
-  showSignedIn({
-    name: profile.getName(),
-    email: profile.getEmail(),
-    photo: profile.getImageUrl()
-  });
+  const box = document.getElementById("signedInBox");
+  box.style.display = "flex";
+  box.innerHTML = `
+    <img src="${profile.getImageUrl()}" alt="Profile">
+    <div class="user-info">Signed in as ${profile.getName()}</div>
+    <a href="#" id="signOutLink">Sign out</a>
+  `;
+  document.getElementById("signOutLink").onclick = ()=>{
+    gapi.auth2.getAuthInstance().signOut().then(()=>{
+      box.style.display="none";
+      window.location.reload();
+    });
+  };
 }
 </script>
 
-<!-- Load Google Platform Library -->
+<!-- Google Sign-In -->
 <script src="https://apis.google.com/js/platform.js" async defer></script>
 
 </body>
