@@ -44,14 +44,12 @@
 
   .controls {
     margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
   }
 
   .controls label {
     font-weight: bold;
-    margin-right: 4px;
+    display: block;
+    margin-top: 8px;
   }
 
   input[type="date"] {
@@ -60,13 +58,15 @@
     font-size: 16px;
   }
 
+  /* === Shrunk greeting box only === */
   input#greeting {
-    width: 60px;       /* shrink to 1 word */
+    width: 60px;  /* single word */
     padding: 6px;
     font-size: 16px;
   }
 
   input[type="text"], textarea {
+    width: 100%;
     padding: 8px;
     margin-top: 4px;
     font-size: 16px;
@@ -141,7 +141,7 @@
 <header>
   <img id="userIcon" class="header-icon" src="genuser.jpg" alt="Login" title="Click to sign in/out">
   <h1>Visitor Magic</h1>
-  <a href="addcontact.html" class="header-plus">➕</a>
+  <a href="addcontact.html" class="header-plus" style="font-size:18px; text-decoration:none;">➕</a>
 </header>
 
 <div class="controls" id="appControls" style="display:none;">
@@ -151,8 +151,9 @@
   <label for="greeting">Greeting</label>
   <input type="text" id="greeting">
 
+  <!-- === Sheet icon moved to right of greeting only === -->
   <img class="header-icon" id="sheetIcon" src="sheet-icon.png" alt="Sheet" title="Open Sheet">
-  
+
   <label for="message">Message</label>
   <textarea id="message" rows="4"></textarea>
 </div>
@@ -174,7 +175,7 @@ const userIcon = document.getElementById("userIcon");
 const sheetIcon = document.getElementById("sheetIcon");
 
 function setStatus(msg) { document.getElementById("statusLine").textContent = msg || ""; }
-function showAppUI(show) { document.getElementById("appControls").style.display = show ? "flex" : "none"; }
+function showAppUI(show) { document.getElementById("appControls").style.display = show ? "block" : "none"; }
 
 function updateUserIcon(profile) {
   if (profile && profile.picture) { userIcon.src = profile.picture; }
@@ -233,6 +234,7 @@ sheetIcon.addEventListener("click", () => {
   window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?gid=671174622`, "_blank");
 });
 
+/* ===================== Visitors logic ===================== */
 const datePicker = document.getElementById("datePicker");
 const messageInput = document.getElementById("message");
 const greetingInput = document.getElementById("greeting");
