@@ -45,7 +45,6 @@ header h1 {
 }
 
 /* ===== Date Range ===== */
-
 .date-range {
   display: none;
   gap: 8px;
@@ -63,7 +62,6 @@ header h1 {
 }
 
 /* ===== Content ===== */
-
 .section-label {
   font-size: 16px;
   font-weight: 600;
@@ -116,20 +114,10 @@ header h1 {
 
 <script>
 /* ================= CONFIG ================= */
-
-const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
+const SPREADSHEET_ID = "1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ";
+const SHEET_RANGE = "Form Responses 1!A:V";
 
 /* ================= HELPERS ================= */
-
-function csvUrl(url) {
-  const gid = url.match(/gid=(\d+)/)?.[1];
-  return url.replace(
-    /\/edit.*$/,
-    `/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ""}`
-  );
-}
-
 function parseSheetDate(str) {
   if (!str) return null;
   const m = str.match(
@@ -143,20 +131,11 @@ function parseSheetDate(str) {
   );
 }
 
-function parseCsvCleaned(text) {
-  text = text.replace(/"/g, "");
-  return text
-    .split(/\r?\n/)
-    .map(r => r.split(",").map(c => c.trim()))
-    .filter(r => r.length > 1);
-}
-
 function formatDate(d) {
   return d.toLocaleDateString();
 }
 
 /* ================= MAIN ================= */
-
 const startInput = document.getElementById("startDate");
 const endInput = document.getElementById("endDate");
 const label = document.getElementById("label");
@@ -183,8 +162,34 @@ function initDates() {
   endInput.value = end.toISOString().split("T")[0];
 }
 
+/* ================== SHEETS FETCH WITH TOKEN ================== */
+async function fetchSheetValues() {
+  const token = localStorage.getItem("vm_access_token");
+  if (!token) throw new Error("No access token, please sign in on main page.");
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_RANGE)}`;
+
+  const res = await fetch(url, {
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  });
+
+  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
+
+  const data = await res.json();
+  return data.values || [];
+}
+
+/* ================== LOAD VISITORS ================== */
 async function loadVisitors() {
   const container = document.getElementById("visitorButtons");
+  const token = localStorage.getItem("vm_access_token");
+  if (!token) {
+    container.innerHTML = "Please sign in from the main page first.";
+    return;
+  }
+
   container.innerHTML = "Loading...";
 
   const start = new Date(startInput.value);
@@ -194,8 +199,14 @@ async function loadVisitors() {
   label.textContent =
     `Visitors from ${formatDate(start)} to ${formatDate(end)}`;
 
-  const res = await fetch(csvUrl(SHEET_URL));
-  const rows = parseCsvCleaned(await res.text());
+  let rows;
+  try {
+    rows = await fetchSheetValues();
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "Error loading sheet.";
+    return;
+  }
 
   container.innerHTML = "";
 
@@ -209,7 +220,6 @@ async function loadVisitors() {
     const last = cols[2];
     if (!first || !last) return;
 
-    // Children names
     let childrenNames = [];
     if (cols[11]?.toLowerCase() === "yes") {
       for (let i = 12; i < cols.length; i += 2) {
@@ -217,7 +227,6 @@ async function loadVisitors() {
       }
     }
 
-    // Only take date part, discard time
     const visitDateOnly = cols[0].split(" ")[0];
 
     const noteLines = [
@@ -227,9 +236,7 @@ async function loadVisitors() {
     ];
     const note = noteLines.join("\\n");
 
-    // Address
-    const address = [cols[8], cols[9], cols[10]].filter(Boolean).join(", ");
-
+    const address = [cols[8], cols[9], cols[10]].filter(Boolean).join(",");
     const email = cols[5] || "";
 
     const btn = document.createElement("button");
