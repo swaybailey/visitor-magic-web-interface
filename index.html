@@ -104,30 +104,31 @@
       border-radius: 8px;
       margin-bottom: 16px;
       box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     #userInfo {
       font-size: 14px;
-      margin-top: 8px;
       color: #333;
-      display: inline-block;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #userPic {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
     }
 
     #signOutBtn {
-      margin-left: 8px;
       padding: 6px 10px;
-      font-size: 12px;
       border-radius: 6px;
       border: 1px solid #ccc;
       background: #fff;
       cursor: pointer;
-      display: inline-block;
-    }
-
-    #statusLine {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #444;
     }
   </style>
 </head>
@@ -147,10 +148,12 @@
     Sign in with Google
   </button>
 
-  <div id="userInfo" style="display:none;"></div>
-  <button id="signOutBtn" style="display:none;">Sign out</button>
+  <div id="userInfo" style="display:none;">
+    <img id="userPic" src="" alt="User Icon">
+    <span id="userName"></span>
+  </div>
 
-  <div id="statusLine"></div>
+  <button id="signOutBtn" style="display:none;">Sign out</button>
 </div>
 
 <div class="controls" id="appControls" style="display:none;">
@@ -177,57 +180,38 @@ const SHEET_RANGE = "Form Responses 1!A:V";
 let accessToken = null;
 let tokenClient = null;
 
-function setStatus(msg) {
-  document.getElementById("statusLine").textContent = msg || "";
-}
-
 function showAppUI(show) {
   document.getElementById("appControls").style.display = show ? "block" : "none";
 }
 
 function initTokenClient() {
-  if (!window.google || !google.accounts || !google.accounts.oauth2) {
-    setStatus("Google library not ready yet...");
-    return false;
-  }
-
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: "https://www.googleapis.com/auth/spreadsheets.readonly",
     callback: (tokenResponse) => {
-      if (!tokenResponse || !tokenResponse.access_token) {
-        setStatus("Sign-in failed (no access token).");
-        return;
-      }
-
+      if (!tokenResponse || !tokenResponse.access_token) return;
       accessToken = tokenResponse.access_token;
       localStorage.setItem("vm_access_token", accessToken);
 
-      // ===== single-line signed-in display =====
-      const userInfoDiv = document.getElementById("userInfo");
-      const signOutBtn = document.getElementById("signOutBtn");
+      // Hide sign-in button
+      document.getElementById("googleSignInBtn").style.display = "none";
 
-      userInfoDiv.style.display = "inline-block";
-      userInfoDiv.textContent = `Signed in ✅`;
+      // Show user info
+      const profile = tokenResponse.profileObj || {};
+      document.getElementById("userPic").src = profile.picture || "";
+      document.getElementById("userName").textContent = profile.name || "Signed in";
+      document.getElementById("userInfo").style.display = "flex";
 
-      signOutBtn.style.display = "inline-block";
-
+      document.getElementById("signOutBtn").style.display = "inline-block";
       showAppUI(true);
 
-      setStatus("Loading visitors...");
       loadVisitors();
     }
   });
-
-  return true;
 }
 
 document.getElementById("googleSignInBtn").addEventListener("click", () => {
-  setStatus("Opening Google sign-in...");
-  if (!tokenClient) {
-    const ok = initTokenClient();
-    if (!ok) return;
-  }
+  if (!tokenClient) initTokenClient();
   tokenClient.requestAccessToken({ prompt: "consent" });
 });
 
@@ -235,35 +219,30 @@ document.getElementById("signOutBtn").addEventListener("click", () => {
   accessToken = null;
   localStorage.removeItem("vm_access_token");
 
+  document.getElementById("googleSignInBtn").style.display = "inline-block";
   document.getElementById("userInfo").style.display = "none";
   document.getElementById("signOutBtn").style.display = "none";
   showAppUI(false);
-
   document.getElementById("visitorList").innerHTML = "";
-  setStatus("Signed out.");
 });
 
+/* Restore token */
 window.addEventListener("DOMContentLoaded", () => {
   const savedToken = localStorage.getItem("vm_access_token");
   if (savedToken) {
     accessToken = savedToken;
-
-    const userInfoDiv = document.getElementById("userInfo");
-    const signOutBtn = document.getElementById("signOutBtn");
-
-    userInfoDiv.style.display = "inline-block";
-    userInfoDiv.textContent = `Signed in ✅`;
-    signOutBtn.style.display = "inline-block";
-
+    document.getElementById("googleSignInBtn").style.display = "none";
+    document.getElementById("userInfo").style.display = "flex";
+    document.getElementById("userName").textContent = "Signed in";
+    document.getElementById("signOutBtn").style.display = "inline-block";
     showAppUI(true);
-    setStatus("Loading visitors...");
     loadVisitors();
   }
 });
 </script>
 
 <script>
-// === YOUR EXISTING HELPER FUNCTIONS ===
+/* ================= YOUR EXISTING HELPERS AND LOGIC ================= */
 function parseSheetDate(str) {
   if (!str) return null;
   const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/);
@@ -274,35 +253,25 @@ function parseSheetDate(str) {
 function sameDay(d1,d2){return d1.getFullYear()===d2.getFullYear()&&d1.getMonth()===d2.getMonth()&&d1.getDate()===d2.getDate();}
 function formatPhone(phone){const d=(phone||"").replace(/\D/g,"");return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:(phone||"");}
 
-// === MAIN UI LOGIC ===
 const datePicker=document.getElementById("datePicker");
 const messageInput=document.getElementById("message");
 const greetingInput=document.getElementById("greeting");
-
 const DEFAULT_GREETING="Hey";
 const DEFAULT_MESSAGE="It was great having you in worship with us today.\nI look forward to getting to know you.";
 
 greetingInput.value=localStorage.getItem("vm_greeting")||DEFAULT_GREETING;
 messageInput.value=localStorage.getItem("vm_message")||DEFAULT_MESSAGE;
-
 messageInput.addEventListener("input",()=>localStorage.setItem("vm_message",messageInput.value));
 greetingInput.addEventListener("input",()=>localStorage.setItem("vm_greeting",greetingInput.value));
 
-window.addEventListener("DOMContentLoaded",()=>{
-  const today=new Date();
-  datePicker.value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
-  if(accessToken) loadVisitors(); else setStatus("Please sign in to load visitors.");
-});
-
-datePicker.addEventListener("change",()=>{if(accessToken) loadVisitors();});
+datePicker.addEventListener("change",()=>{if(accessToken)loadVisitors();});
 
 async function fetchSheetValues(){
   if(!accessToken)throw new Error("Not signed in / no access token.");
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_RANGE)}`;
   const res=await fetch(url,{headers:{"Authorization":`Bearer ${accessToken}`}});
-  if(!res.ok){const t=await res.text();throw new Error(`Sheets API error (${res.status}): ${t}`);}
-  const data=await res.json();
-  return data.values||[];
+  if(!res.ok){const text=await res.text();throw new Error(`Sheets API error (${res.status}): ${text}`);}
+  const data=await res.json();return data.values||[];
 }
 
 async function loadVisitors(){
@@ -311,38 +280,37 @@ async function loadVisitors(){
   list.innerHTML="Loading...";
 
   const dateValue=datePicker.value;if(!dateValue){list.innerHTML="Select a date";return;}
-  const [y,m,d]=dateValue.split("-").map(Number);const selected=new Date(y,m-1,d);
+  const [y,m,d]=dateValue.split("-").map(Number);
+  const selected=new Date(y,m-1,d);
 
   let rows;
-  try{rows=await fetchSheetValues();}catch(err){console.error(err);list.innerHTML="Error loading Google Sheet.";setStatus("ERROR: Unable to read the sheet.");return;}
-
+  try{rows=await fetchSheetValues();}catch(err){console.error(err);list.innerHTML="Error loading Google Sheet.";return;}
   list.innerHTML="";
-  if(!rows.length){list.innerHTML="No data found in sheet.";return;}
 
+  if(!rows.length){list.innerHTML="No data found in sheet.";return;}
   rows.slice(1).forEach(cols=>{
     if(!cols||cols.length<12)return;
-    const visitDate=parseSheetDate(cols[0]);if(!visitDate||!sameDay(visitDate,selected))return;
-    const first=cols[1]||"";const last=cols[2]||"";const phone=cols[3]||"";const decade=cols[7]||"";const smsAllowed=(cols[4]||"").toLowerCase()!=="no";
-
-    const children=[];if((cols[11]||"").toLowerCase()==="yes"){for(let i=12;i<cols.length;i+=2){const name=cols[i];const age=cols[i+1];if(name&&age)children.push(`${name} (${age})`);}}
-
+    const visitDate=parseSheetDate(cols[0]);
+    if(!visitDate||!sameDay(visitDate,selected))return;
+    const first=cols[1]||"",last=cols[2]||"",phone=cols[3]||"",decade=cols[7]||"",smsAllowed=(cols[4]||"").toLowerCase()!=="no";
+    const children=[];
+    if((cols[11]||"").toLowerCase()==="yes"){for(let i=12;i<cols.length;i+=2){if(cols[i]&&cols[i+1])children.push(`${cols[i]} (${cols[i+1]})`);}}
     const div=document.createElement("div");div.className="visitor";
-    const info=document.createElement("div");info.className="visitor-info";
-    info.innerHTML=`<strong>${first} ${last}</strong> <span style="font-size:12px">(${decade})</span><br>${formatPhone(phone)}${children.length?`<div class="children">Children: ${children.join(", ")}</div>`:""}<div class="children" style="color:green;">${cols[9]||""}, ${cols[10]||""}</div>`;
+    const info=document.createElement("div");info.className="visitor-info";info.innerHTML=`
+      <strong>${first} ${last}</strong>
+      <span style="font-size:12px;font-weight:normal">(${decade})</span><br>
+      ${formatPhone(phone)}
+      ${children.length?`<div class="children">Children: ${children.join(", ")}</div>`:""}
+      <div class="children" style="color:green">${(cols[9]||"")}, ${(cols[10]||"")}</div>
+    `;
     const btn=document.createElement("button");btn.textContent="SMS";btn.className=smsAllowed?"sms-enabled":"sms-disabled";btn.disabled=!smsAllowed;btn.addEventListener("click",()=>sendSms(phone,first));
     div.append(info,btn);list.appendChild(div);
   });
 
   if(!list.children.length)list.innerHTML="No visitors found for this date";
-  setStatus("Loaded.");
 }
 
 function sendSms(phone,first){const body=encodeURIComponent(`${greetingInput.value} ${first}, ${messageInput.value}`);window.location.href=`sms:${phone}?body=${body}`;}
-</script>
-
-<!-- DEBUGGING: Unregister all service workers -->
-<script>
-(async()=>{if("serviceWorker"in navigator){const regs=await navigator.serviceWorker.getRegistrations();for(const r of regs)await r.unregister();console.log("All service workers unregistered.");}})();
 </script>
 
 </body>
