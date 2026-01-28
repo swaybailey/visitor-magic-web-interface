@@ -6,127 +6,136 @@
 <title>Visitor Magic</title>
 
 <style>
-body {
-  font-family: system-ui, sans-serif;
-  margin: 0;
-  padding: 16px;
-  background: #f5f5f5;
-}
+  body {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    padding: 16px;
+    background: #f5f5f5;
+  }
 
-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
+  header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+  }
 
-header h1 {
-  flex: 1;
-  margin: 0;
-  font-size: 24px;
-  text-align: center;
-}
+  header h1 {
+    flex: 1;
+    margin: 0;
+    font-size: 24px;
+    text-align: center;
+  }
 
-header a, .header-plus {
-  text-decoration: none;
-  font-size: 20px;
-  margin: 0 8px;
-}
+  .header-icon {
+    width: 32px;
+    height: 32px;
+    margin: 0 8px;
+    cursor: pointer;
+    border-radius: 50%;
+    object-fit: cover;
+  }
 
-.header-plus {
-  margin-left: auto;
-}
+  .header-plus {
+    font-size: 20px;
+    margin-left: 16px;
+    cursor: pointer;
+  }
 
-.controls {
-  margin-bottom: 16px;
-}
+  .controls {
+    margin-bottom: 16px;
+  }
 
-.controls label {
-  font-weight: bold;
-  display: block;
-  margin-top: 8px;
-}
+  .controls label {
+    font-weight: bold;
+    display: block;
+    margin-top: 8px;
+  }
 
-input[type="date"] {
-  width: 150px;
-  padding: 6px;
-  font-size: 16px;
-}
+  input[type="date"] {
+    width: 150px;
+    padding: 6px;
+    font-size: 16px;
+  }
 
-input[type="text"], textarea {
-  width: 100%;
-  padding: 8px;
-  margin-top: 4px;
-  font-size: 16px;
-  display: block;
-}
+  input[type="text"], textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    font-size: 16px;
+    display: block;
+  }
 
-.visitor {
-  background: white;
-  padding: 12px;
-  margin-bottom: 8px;
-  border-radius: 6px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  .visitor {
+    background: white;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-.visitor-info {
-  flex: 1;
-}
+  .visitor-info {
+    flex: 1;
+  }
 
-.children {
-  color: red;
-  font-size: 13px;
-  margin-top: 4px;
-}
+  .children {
+    color: red;
+    font-size: 13px;
+    margin-top: 4px;
+  }
 
-.sms-enabled {
-  background: #47b80f;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  padding: 8px 10px;
-}
+  .sms-enabled {
+    background: #47b80f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 8px 10px;
+  }
 
-.sms-disabled {
-  background: #ccc;
-  color: #666;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 10px;
-}
+  .sms-disabled {
+    background: #ccc;
+    color: #666;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
 
-/* login UI */
-#statusLine {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #444;
-}
+  #statusLine {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #444;
+  }
+
+  #loginBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  #loginBtn img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
 </style>
 </head>
 
 <body>
 
-<header style="display:flex; align-items:center; margin-bottom:16px;">
-  <!-- User login / avatar button -->
-  <button id="userIconBtn" style="
-      width:36px; height:36px; border-radius:50%;
-      border:none; cursor:pointer; margin-right:8px;
-      background-color:#ccc; background-size:cover; background-position:center;
-      font-size:12px; font-weight:bold;">
-    Login
-  </button>
-
-  <!-- Title -->
-  <h1 style="flex:1; text-align:center; margin:0; font-size:24px;">Visitor Magic</h1>
-
-  <!-- Sheet icon moved closer to title -->
-  <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" 
-     target="_blank" style="margin-right:auto; margin-left:10px; font-size:20px;">📄</a>
-
-  <!-- Add contact icon far right -->
-  <a href="addcontact.html" class="header-plus" style="margin-left:auto; font-size:20px;">➕</a>
+<header>
+  <img id="userIcon" class="header-icon" src="genuser.jpg" alt="Login" title="Click to sign in/out">
+  <h1>Visitor Magic</h1>
+  <img class="header-icon" id="sheetIcon" src="sheet-icon.png" alt="Sheet" title="Open Sheet">
+  <a href="addcontact.html" class="header-plus">➕</a>
 </header>
 
 <div class="controls" id="appControls" style="display:none;">
@@ -141,6 +150,7 @@ input[type="text"], textarea {
 </div>
 
 <div id="visitorList"></div>
+<div id="statusLine"></div>
 
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -149,10 +159,12 @@ input[type="text"], textarea {
 const GOOGLE_CLIENT_ID = "651012310033-dbj2vvf3evf9aomj577621ddhked2uvn.apps.googleusercontent.com";
 const SPREADSHEET_ID = "1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ";
 const SHEET_RANGE = "Form Responses 1!A:V";
-const GENERIC_ICON = "genuser.jpg";
 
 let accessToken = null;
 let tokenClient = null;
+
+const userIcon = document.getElementById("userIcon");
+const sheetIcon = document.getElementById("sheetIcon");
 
 function setStatus(msg) {
   document.getElementById("statusLine").textContent = msg || "";
@@ -163,160 +175,147 @@ function showAppUI(show) {
 }
 
 function updateUserIcon(profile) {
-  const btn = document.getElementById("userIconBtn");
   if (profile && profile.picture) {
-    btn.style.backgroundImage = `url('${profile.picture}')`;
-    btn.textContent = "";
+    userIcon.src = profile.picture;
   } else {
-    btn.style.backgroundImage = `url('${GENERIC_ICON}')`;
-    btn.textContent = "";
+    userIcon.src = "genuser.jpg";
   }
 }
 
 function initTokenClient() {
-  if (!window.google || !google.accounts || !google.accounts.oauth2) {
-    setStatus("Google library not ready yet... try again.");
-    return false;
-  }
-
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: "https://www.googleapis.com/auth/spreadsheets.readonly",
-    callback: (tokenResponse) => {
+    callback: async (tokenResponse) => {
       if (!tokenResponse || !tokenResponse.access_token) {
         setStatus("Sign-in failed.");
         return;
       }
-
       accessToken = tokenResponse.access_token;
       localStorage.setItem("vm_access_token", accessToken);
-
-      // Set user icon after login
-      updateUserIcon({}); // placeholder, will replace with real profile pic if desired
-
       showAppUI(true);
+      setStatus("Loading visitors...");
+
+      // fetch user info for avatar
+      try {
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        const profile = await res.json();
+        updateUserIcon(profile);
+      } catch (err) {
+        console.error("Failed to fetch user info", err);
+        updateUserIcon();
+      }
+
       loadVisitors();
     }
   });
-
-  return true;
 }
 
-document.getElementById("userIconBtn").addEventListener("click", () => {
+userIcon.addEventListener("click", () => {
   if (!accessToken) {
-    const ok = tokenClient || initTokenClient();
+    // signed out: request token
+    if (!tokenClient) initTokenClient();
     tokenClient.requestAccessToken({ prompt: "consent" });
   } else {
-    // sign out
+    // signed in: log out
     accessToken = null;
     localStorage.removeItem("vm_access_token");
-    updateUserIcon();
+    updateUserIcon(); // back to generic icon
     showAppUI(false);
     document.getElementById("visitorList").innerHTML = "";
-    setStatus("Signed out. Click avatar to login again.");
+    setStatus("Signed out. Click avatar to sign in.");
   }
 });
 
-/* Restore token on load */
+// restore token if available
 window.addEventListener("DOMContentLoaded", () => {
   const savedToken = localStorage.getItem("vm_access_token");
   if (savedToken) {
     accessToken = savedToken;
-    updateUserIcon({});
     showAppUI(true);
+    setStatus("Loading visitors...");
+    fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { "Authorization": `Bearer ${accessToken}` }
+    })
+      .then(r => r.json())
+      .then(profile => updateUserIcon(profile))
+      .catch(() => updateUserIcon());
     loadVisitors();
+  } else {
+    updateUserIcon();
+    setStatus("Click avatar to sign in.");
   }
 });
 
-// ===== YOUR EXISTING VISITOR LOGIC =====
-function parseSheetDate(str) {
-  if (!str) return null;
-  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/);
-  if (!m) return null;
-  return new Date(m[3], m[1]-1, m[2], m[4], m[5], m[6]);
-}
-
-function sameDay(d1,d2) {
-  return d1.getFullYear()===d2.getFullYear() && d1.getMonth()===d2.getMonth() && d1.getDate()===d2.getDate();
-}
-
-function formatPhone(phone) {
-  const d=(phone||"").replace(/\D/g,"");
-  return d.length===10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : (phone||"");
-}
-
-const datePicker=document.getElementById("datePicker");
-const messageInput=document.getElementById("message");
-const greetingInput=document.getElementById("greeting");
-
-const DEFAULT_GREETING="Hey";
-const DEFAULT_MESSAGE="It was great having you in worship with us today.\nI look forward to getting to know you.";
-
-greetingInput.value=localStorage.getItem("vm_greeting")||DEFAULT_GREETING;
-messageInput.value=localStorage.getItem("vm_message")||DEFAULT_MESSAGE;
-
-messageInput.addEventListener("input",()=>localStorage.setItem("vm_message",messageInput.value));
-greetingInput.addEventListener("input",()=>localStorage.setItem("vm_greeting",greetingInput.value));
-
-window.addEventListener("DOMContentLoaded",()=>{
-  const today=new Date();
-  datePicker.value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  if(accessToken) loadVisitors();
+// position sheet icon click
+sheetIcon.addEventListener("click", () => {
+  window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?gid=671174622`, "_blank");
 });
 
-datePicker.addEventListener("change",()=>{if(accessToken) loadVisitors();});
+/* ===================== Visitors logic ===================== */
+const datePicker = document.getElementById("datePicker");
+const messageInput = document.getElementById("message");
+const greetingInput = document.getElementById("greeting");
+const DEFAULT_GREETING = "Hey";
+const DEFAULT_MESSAGE = "It was great having you in worship with us today.\nI look forward to getting to know you.";
+greetingInput.value = localStorage.getItem("vm_greeting") || DEFAULT_GREETING;
+messageInput.value = localStorage.getItem("vm_message") || DEFAULT_MESSAGE;
+messageInput.addEventListener("input", () => localStorage.setItem("vm_message", messageInput.value));
+greetingInput.addEventListener("input", () => localStorage.setItem("vm_greeting", greetingInput.value));
+
+window.addEventListener("DOMContentLoaded", () => {
+  const today = new Date();
+  datePicker.value =
+    today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
+});
+
+datePicker.addEventListener("change", () => { if (accessToken) loadVisitors(); });
 
 async function fetchSheetValues() {
-  if(!accessToken) throw new Error("Not signed in");
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_RANGE)}`;
-  const res=await fetch(url,{headers:{"Authorization":`Bearer ${accessToken}`}});
-  if(!res.ok) throw new Error(`Sheets API error ${res.status}`);
-  const data=await res.json();
-  return data.values||[];
+  if (!accessToken) throw new Error("Not signed in.");
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_RANGE)}`;
+  const res = await fetch(url, { headers: { "Authorization": `Bearer ${accessToken}` } });
+  if (!res.ok) throw new Error(`Sheets API error ${res.status}`);
+  const data = await res.json();
+  return data.values || [];
 }
 
 async function loadVisitors() {
-  const list=document.getElementById("visitorList");
-  if(!accessToken){list.innerHTML="Please sign in first."; return;}
-  list.innerHTML="Loading...";
-  const [y,m,d]=datePicker.value.split("-").map(Number);
-  const selected=new Date(y,m-1,d);
+  const list = document.getElementById("visitorList");
+  if (!accessToken) { list.innerHTML = "Please sign in first."; return; }
+  list.innerHTML = "Loading...";
+  const [y, m, d] = datePicker.value.split("-").map(Number);
+  const selected = new Date(y, m - 1, d);
+
   let rows;
-  try{rows=await fetchSheetValues();}
-  catch(err){console.error(err); list.innerHTML="Error loading sheet."; return;}
-  list.innerHTML="";
-  if(!rows.length){list.innerHTML="No data found."; return;}
-  rows.slice(1).forEach(cols=>{
-    if(!cols||cols.length<12) return;
-    const visitDate=parseSheetDate(cols[0]);
-    if(!visitDate||!sameDay(visitDate,selected)) return;
-    const first=cols[1]||"", last=cols[2]||"", phone=cols[3]||"", decade=cols[7]||"";
-    const smsAllowed=(cols[4]||"").toLowerCase()!=="no";
-    const children=[];
-    if((cols[11]||"").toLowerCase()==="yes"){
-      for(let i=12;i<cols.length;i+=2){
-        const name=cols[i], age=cols[i+1];
-        if(name&&age) children.push(`${name} (${age})`);
-      }
+  try { rows = await fetchSheetValues(); } 
+  catch { list.innerHTML = "Error loading sheet."; return; }
+  list.innerHTML = "";
+  if (!rows.length) { list.innerHTML = "No data found."; return; }
+
+  rows.slice(1).forEach(cols => {
+    if (!cols || cols.length < 12) return;
+    const visitDate = new Date(cols[0]);
+    if (!visitDate || visitDate.getFullYear()!==selected.getFullYear() || visitDate.getMonth()!==selected.getMonth() || visitDate.getDate()!==selected.getDate()) return;
+    const first = cols[1] || "", last = cols[2] || "", phone = cols[3] || "", decade = cols[7] || "";
+    const smsAllowed = (cols[4]||"").toLowerCase()!=="no";
+
+    const children = [];
+    if ((cols[11]||"").toLowerCase()==="yes") {
+      for (let i=12;i<cols.length;i+=2) if(cols[i] && cols[i+1]) children.push(`${cols[i]} (${cols[i+1]})`);
     }
-    const div=document.createElement("div");
-    div.className="visitor";
-    const info=document.createElement("div");
-    info.className="visitor-info";
-    info.innerHTML=`<strong>${first} ${last}</strong>
-      <span style="font-size:12px;font-weight:normal;">(${decade})</span><br>
-      ${formatPhone(phone)}
-      ${children.length?`<div class="children">Children: ${children.join(", ")}</div>`:""}
-      <div class="children" style="color:green;">${cols[9]||""}, ${cols[10]||""}</div>`;
-    const btn=document.createElement("button");
-    btn.textContent="SMS";
-    btn.className=smsAllowed?"sms-enabled":"sms-disabled";
-    btn.disabled=!smsAllowed;
-    btn.addEventListener("click",()=>{const body=encodeURIComponent(`${greetingInput.value} ${first}, ${messageInput.value}`); window.location.href=`sms:${phone}?body=${body}`;});
-    div.append(info,btn);
-    list.appendChild(div);
+
+    const div = document.createElement("div"); div.className="visitor";
+    const info = document.createElement("div"); info.className="visitor-info";
+    info.innerHTML=`<strong>${first} ${last}</strong> <span style="font-size:12px">(${decade})</span><br>${phone}${children.length?`<div class="children">Children: ${children.join(", ")}</div>`:""}<div class="children" style="color:green;">${cols[9]||""}, ${cols[10]||""}</div>`;
+    const btn = document.createElement("button"); btn.textContent="SMS"; btn.className=smsAllowed?"sms-enabled":"sms-disabled"; btn.disabled=!smsAllowed; btn.onclick=()=>{window.location.href=`sms:${phone}?body=${encodeURIComponent(`${greetingInput.value} ${first}, ${messageInput.value}`)}`;};
+    div.append(info, btn); list.appendChild(div);
   });
-  if(!list.children.length) list.innerHTML="No visitors found for this date";
+  if (!list.children.length) list.innerHTML = "No visitors found for this date";
 }
 </script>
 
