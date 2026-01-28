@@ -1,159 +1,278 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Visitor Magic</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visitor Magic</title>
 
-<!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#47b80f">
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f5f5f5;
+    }
 
-<style>
-body {
-  font-family: system-ui, sans-serif;
-  margin: 0;
-  padding: 16px;
-  background: #f5f5f5;
-}
+    header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
 
-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
+    header h1 {
+      flex: 1;
+      margin: 0;
+      font-size: 24px;
+      text-align: center;
+    }
 
-header h1 {
-  flex: 1;
-  margin: 0;
-  font-size: 24px;
-  text-align: center;
-}
+    header a, .header-plus {
+      text-decoration: none;
+      font-size: 20px;
+      margin: 0 8px;
+    }
 
-header a, .header-plus {
-  text-decoration: none;
-  font-size: 20px;
-  margin: 0 8px;
-}
+    .header-plus {
+      margin-left: auto;
+    }
 
-.header-plus {
-  margin-left: auto;
-}
+    .controls {
+      margin-bottom: 16px;
+    }
 
-.controls {
-  margin-bottom: 16px;
-}
+    .controls label {
+      font-weight: bold;
+      display: block;
+      margin-top: 8px;
+    }
 
-.controls label {
-  font-weight: bold;
-  display: block;
-  margin-top: 8px;
-}
+    input[type="date"] {
+      width: 150px;
+      padding: 6px;
+      font-size: 16px;
+    }
 
-input[type="date"] {
-  width: 150px;
-  padding: 6px;
-  font-size: 16px;
-}
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      font-size: 16px;
+      display: block;
+    }
 
-input[type="text"], textarea {
-  width: 100%;
-  padding: 8px;
-  margin-top: 4px;
-  font-size: 16px;
-  display: block;
-}
+    .visitor {
+      background: white;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-.visitor {
-  background: white;
-  padding: 12px;
-  margin-bottom: 8px;
-  border-radius: 6px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    .visitor-info {
+      flex: 1;
+    }
 
-.visitor-info {
-  flex: 1;
-}
+    .children {
+      color: red;
+      font-size: 13px;
+      margin-top: 4px;
+    }
 
-.children {
-  color: red;
-  font-size: 13px;
-  margin-top: 4px;
-}
+    .sms-enabled {
+      background: #47b80f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 8px 12px;
+    }
 
-.sms-enabled {
-  background: #47b80f;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
+    .sms-disabled {
+      background: #ccc;
+      color: #666;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+    }
 
-.sms-disabled {
-  background: #ccc;
-  color: #666;
-  border: none;
-  border-radius: 4px;
-}
-</style>
+    /* LOGIN SCREEN */
+    #loginScreen {
+      max-width: 520px;
+      margin: 60px auto;
+      background: white;
+      padding: 24px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      text-align: center;
+    }
+
+    #appScreen {
+      display: none;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .topbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      border: none;
+      background: #111;
+      color: white;
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn.secondary {
+      background: #777;
+    }
+  </style>
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
 
-<script>
-// ======= USERNAME + PASSWORD PROTECTION =======
-const PASSWORD = "mustangriverglassfork";
-const storedPass = sessionStorage.getItem("vm_pass");
+<!-- ========== LOGIN SCREEN ========== -->
+<div id="loginScreen">
+  <h2>Visitor Magic</h2>
+  <p class="muted">Sign in with your church Google account to continue.</p>
 
-if (storedPass !== PASSWORD) {
-  const username = prompt("Enter your username:");
-  const password = prompt(`Hello ${username || "user"}, enter your password:`);
+  <div style="margin-top: 18px;">
+    <button class="btn" id="loginBtn">Sign in with Google</button>
+  </div>
 
-  if (password !== PASSWORD) {
-    document.body.innerHTML = "<h2>Access Denied</h2>";
-    throw new Error("Access denied");
-  }
-
-  sessionStorage.setItem("vm_pass", PASSWORD);
-}
-</script>
-
-<header>
-  <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank" title="Open original sheet">📄</a>
-  <h1>Visitor Magic</h1>
-  <a href="addcontact.html" class="header-plus" title="Add Contact">➕</a>
-</header>
-
-<div class="controls">
-  <label for="datePicker">Date</label>
-  <input type="date" id="datePicker">
-
-  <label for="greeting">Greeting</label>
-  <input type="text" id="greeting">
-
-  <label for="message">Message</label>
-  <textarea id="message" rows="4"></textarea>
+  <p class="muted" id="loginStatus"></p>
 </div>
 
-<div id="visitorList"></div>
+<!-- ========== APP SCREEN ========== -->
+<div id="appScreen">
+
+  <div class="topbar">
+    <span id="userEmail" class="muted"></span>
+    <button class="btn secondary" id="logoutBtn">Logout</button>
+  </div>
+
+  <header>
+    <a href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622"
+       target="_blank" title="Open original sheet">📄</a>
+    <h1>Visitor Magic</h1>
+    <a href="addcontact.html" class="header-plus" title="Add Contact">➕</a>
+  </header>
+
+  <div class="controls">
+    <label for="datePicker">Date</label>
+    <input type="date" id="datePicker">
+
+    <label for="greeting">Greeting</label>
+    <input type="text" id="greeting">
+
+    <label for="message">Message</label>
+    <textarea id="message" rows="4"></textarea>
+  </div>
+
+  <div id="visitorList"></div>
+
+</div>
 
 <script>
 /* ================= CONFIG ================= */
-const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
+const GOOGLE_CLIENT_ID = "651012310033-dbj2vvf3evf9aomj577621ddhked2uvn.apps.googleusercontent.com";
+const SPREADSHEET_ID = "1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ";
+const SHEET_RANGE = "Form Responses 1!A:Z";
 
-/* ================= HELPERS ================= */
-function csvUrl(url) {
-  const gid = url.match(/gid=(\d+)/)?.[1];
-  return url.replace(
-    /\/edit.*$/,
-    `/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ""}`
-  );
+/* ================= AUTH ================= */
+let accessToken = null;
+let tokenClient = null;
+
+const loginScreen = document.getElementById("loginScreen");
+const appScreen = document.getElementById("appScreen");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const loginStatus = document.getElementById("loginStatus");
+const userEmail = document.getElementById("userEmail");
+
+function showApp() {
+  loginScreen.style.display = "none";
+  appScreen.style.display = "block";
 }
 
+function showLogin() {
+  appScreen.style.display = "none";
+  loginScreen.style.display = "block";
+}
+
+function setStatus(msg) {
+  loginStatus.textContent = msg || "";
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: "openid email profile https://www.googleapis.com/auth/spreadsheets.readonly",
+    callback: async (tokenResponse) => {
+      accessToken = tokenResponse.access_token;
+      localStorage.setItem("vm_access_token", accessToken);
+
+      // optional: show email
+      try {
+        const profile = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        }).then(r => r.json());
+
+        if (profile?.email) {
+          localStorage.setItem("vm_email", profile.email);
+          userEmail.textContent = profile.email;
+        }
+      } catch (e) {}
+
+      showApp();
+      initAppUI();
+    }
+  });
+
+  // restore session if possible
+  const savedToken = localStorage.getItem("vm_access_token");
+  const savedEmail = localStorage.getItem("vm_email");
+  if (savedEmail) userEmail.textContent = savedEmail;
+
+  if (savedToken) {
+    accessToken = savedToken;
+    showApp();
+    initAppUI();
+  } else {
+    showLogin();
+  }
+});
+
+loginBtn.addEventListener("click", () => {
+  setStatus("Opening Google login...");
+  tokenClient.requestAccessToken({ prompt: "consent" });
+});
+
+logoutBtn.addEventListener("click", () => {
+  accessToken = null;
+  localStorage.removeItem("vm_access_token");
+  localStorage.removeItem("vm_email");
+  showLogin();
+  setStatus("Logged out.");
+});
+
+/* ================= HELPERS ================= */
 function parseSheetDate(str) {
   if (!str) return null;
   const m = str.match(
@@ -169,124 +288,124 @@ function parseSheetDate(str) {
 
 function sameDay(d1, d2) {
   return d1.getFullYear() === d2.getFullYear() &&
-         d1.getMonth() === d2.getMonth() &&
-         d1.getDate() === d2.getDate();
-}
-
-function parseCsvCleaned(text) {
-  text = text.replace(/"/g, "");
-  return text
-    .split(/\r?\n/)
-    .map(r => r.split(",").map(c => c.trim()))
-    .filter(r => r.length > 1);
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
 }
 
 function formatPhone(phone) {
-  const d = phone.replace(/\D/g, "");
+  const d = (phone || "").replace(/\D/g, "");
   return d.length === 10
-    ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`
+    ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
     : phone;
 }
 
-/* ================= MAIN ================= */
-const datePicker = document.getElementById("datePicker");
-const messageInput = document.getElementById("message");
-const greetingInput = document.getElementById("greeting");
+async function fetchSheetValues() {
+  if (!accessToken) throw new Error("Not logged in");
 
-const DEFAULT_GREETING = "Hey";
-const DEFAULT_MESSAGE = "It was great having you in worship with us today.\nI look forward to getting to know you.";
+  const url =
+    `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/` +
+    encodeURIComponent(SHEET_RANGE);
 
-greetingInput.value = localStorage.getItem("vm_greeting") || DEFAULT_GREETING;
-messageInput.value = localStorage.getItem("vm_message") || DEFAULT_MESSAGE;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
 
-messageInput.addEventListener("input", () =>
-  localStorage.setItem("vm_message", messageInput.value)
-);
-greetingInput.addEventListener("input", () =>
-  localStorage.setItem("vm_greeting", greetingInput.value)
-);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Sheets API error: ${res.status} ${text}`);
+  }
 
-window.addEventListener("DOMContentLoaded", () => {
+  const data = await res.json();
+  return data.values || [];
+}
+
+/* ================= MAIN APP ================= */
+let appInitialized = false;
+
+function initAppUI() {
+  if (appInitialized) return;
+  appInitialized = true;
+
+  const datePicker = document.getElementById("datePicker");
+  const messageInput = document.getElementById("message");
+  const greetingInput = document.getElementById("greeting");
+
+  const DEFAULT_GREETING = "Hey";
+  const DEFAULT_MESSAGE =
+    "It was great having you in worship with us today.\nI look forward to getting to know you.";
+
+  greetingInput.value = localStorage.getItem("vm_greeting") || DEFAULT_GREETING;
+  messageInput.value = localStorage.getItem("vm_message") || DEFAULT_MESSAGE;
+
+  messageInput.addEventListener("input", () =>
+    localStorage.setItem("vm_message", messageInput.value)
+  );
+  greetingInput.addEventListener("input", () =>
+    localStorage.setItem("vm_greeting", greetingInput.value)
+  );
+
   const today = new Date();
   datePicker.value =
     today.getFullYear() + '-' +
-    String(today.getMonth()+1).padStart(2,'0') + '-' +
-    String(today.getDate()).padStart(2,'0');
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+
+  datePicker.addEventListener("change", loadVisitors);
   loadVisitors();
-});
 
-datePicker.addEventListener("change", loadVisitors);
+  async function loadVisitors() {
+    const list = document.getElementById("visitorList");
+    list.innerHTML = "Loading...";
 
-async function loadVisitors() {
-  const list = document.getElementById("visitorList");
-  list.innerHTML = "Loading...";
-
-  const [y, m, d] = datePicker.value.split("-").map(Number);
-  const selected = new Date(y, m - 1, d);
-
-  const res = await fetch(csvUrl(SHEET_URL));
-  const rows = parseCsvCleaned(await res.text());
-
-  list.innerHTML = "";
-
-  rows.slice(1).forEach(cols => {
-    if (cols.length < 12) return;
-
-    const visitDate = parseSheetDate(cols[0]);
-    if (!visitDate || !sameDay(visitDate, selected)) return;
-
-    const first = cols[1];
-    const last = cols[2];
-    const phone = cols[3];
-    const decade = cols[7];
-    const smsAllowed = cols[4].toLowerCase() !== "no";
-
-    const children = [];
-    if (cols[11].toLowerCase() === "yes") {
-      for (let i = 12; i < cols.length; i += 2) {
-        if (cols[i] && cols[i+1]) children.push(`${cols[i]} (${cols[i+1]})`);
-      }
+    const dateValue = datePicker.value;
+    if (!dateValue) {
+      list.innerHTML = "Select a date";
+      return;
     }
 
-    const div = document.createElement("div");
-    div.className = "visitor";
+    const [y, m, d] = dateValue.split("-").map(Number);
+    const selected = new Date(y, m - 1, d);
 
-    div.innerHTML = `
-      <div class="visitor-info">
-        <strong>${first} ${last}</strong> <span style="font-size:12px">(${decade})</span><br>
-        ${formatPhone(phone)}
-        ${children.length ? `<div class="children">Children: ${children.join(", ")}</div>` : ""}
-        <div class="children" style="color: green;">${cols[9]}, ${cols[10]}</div>
-      </div>
-    `;
+    let rows;
+    try {
+      rows = await fetchSheetValues();
+    } catch (err) {
+      console.error(err);
+      list.innerHTML = `
+        <div style="background:white;padding:12px;border-radius:8px;">
+          <strong>Could not load sheet</strong><br>
+          ${err.message}<br><br>
+          Try logging out and logging in again.
+        </div>
+      `;
+      return;
+    }
 
-    const btn = document.createElement("button");
-    btn.textContent = "SMS";
-    btn.className = smsAllowed ? "sms-enabled" : "sms-disabled";
-    btn.disabled = !smsAllowed;
-    btn.onclick = () => sendSms(phone, first);
+    list.innerHTML = "";
 
-    div.appendChild(btn);
-    list.appendChild(div);
-  });
+    rows.slice(1).forEach(cols => {
+      if (cols.length < 12) return;
 
-  if (!list.children.length) list.innerHTML = "No visitors found for this date";
-}
+      const visitDate = parseSheetDate(cols[0]);
+      if (!visitDate || !sameDay(visitDate, selected)) return;
 
-function sendSms(phone, first) {
-  const body = encodeURIComponent(`${greetingInput.value} ${first}, ${messageInput.value}`);
-  window.location.href = `sms:${phone}?body=${body}`;
-}
-</script>
+      const first = cols[1] || "";
+      const last = cols[2] || "";
+      const phone = cols[3] || "";
+      const decade = cols[7] || "";
+      const smsAllowed = (cols[4] || "").toLowerCase() !== "no";
 
-<!-- Service Worker (no caching) -->
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js')
-    .then(() => console.log('Service Worker registered'))
-    .catch(err => console.error('Service Worker error:', err));
-}
-</script>
+      const children = [];
+      if ((cols[11] || "").toLowerCase() === "yes") {
+        for (let i = 12; i < cols.length; i += 2) {
+          const name = cols[i];
+          const age = cols[i + 1];
+          if (name && age) children.push(`${name} (${age})`);
+        }
+      }
 
-</body>
-</html>
+      const div = document.createElement("div");
+      div.className = "visitor";
+
+      const info = document.createElement("div");
+      info.cla
