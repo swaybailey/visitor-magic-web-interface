@@ -111,7 +111,7 @@
 <body>
 
 <header>
-  <img id="userIcon" src="" alt="User" />
+  <img id="userIcon" src="https://www.firstblueridge.org/images/default-user.png" alt="User" />
   <h1>Visitor Magic</h1>
   <a id="sheetIcon" href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank">📄</a>
   <a href="addcontact.html" class="header-plus">➕</a>
@@ -130,7 +130,6 @@
 
 <div id="visitorList"></div>
 
-<!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
@@ -169,7 +168,7 @@ function initTokenClient() {
   return true;
 }
 
-// Fetch basic profile info for user icon
+// Fetch profile info for signed in icon
 async function fetchUserProfile() {
   if (!accessToken) return;
   try {
@@ -183,7 +182,7 @@ async function fetchUserProfile() {
   }
 }
 
-// Sign in or sign out on icon click
+// Click icon to sign in or out
 userIcon.addEventListener("click", () => {
   if (!accessToken) {
     if (!tokenClient) initTokenClient();
@@ -197,7 +196,7 @@ userIcon.addEventListener("click", () => {
   }
 });
 
-// Restore token if previously signed in
+// Restore token on page load
 window.addEventListener("DOMContentLoaded", () => {
   const savedToken = localStorage.getItem("vm_access_token");
   if (savedToken) {
@@ -209,12 +208,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ====================== EXISTING HELPERS ====================== */
-function parseSheetDate(str) {
-  if (!str) return null;
-  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/);
-  if (!m) return null;
-  return new Date(m[3], m[1]-1, m[2], m[4], m[5], m[6]);
-}
+function parseSheetDate(str) {if(!str)return null;const m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/);if(!m)return null;return new Date(m[3],m[1]-1,m[2],m[4],m[5],m[6]);}
 function sameDay(d1,d2){return d1.getFullYear()===d2.getFullYear()&&d1.getMonth()===d2.getMonth()&&d1.getDate()===d2.getDate();}
 function formatPhone(phone){const d=(phone||"").replace(/\D/g,"");return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:(phone||"");}
 
