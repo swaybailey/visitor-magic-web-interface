@@ -58,9 +58,8 @@
     font-size: 16px;
   }
 
-  /* === Shrunk greeting box only === */
   input#greeting {
-    width: 60px;  /* single word */
+    width: 100px; /* smaller box for single word */
     padding: 6px;
     font-size: 16px;
   }
@@ -70,6 +69,7 @@
     padding: 8px;
     margin-top: 4px;
     font-size: 16px;
+    display: block;
   }
 
   .visitor {
@@ -141,7 +141,8 @@
 <header>
   <img id="userIcon" class="header-icon" src="genuser.jpg" alt="Login" title="Click to sign in/out">
   <h1>Visitor Magic</h1>
-  <a href="addcontact.html" class="header-plus" style="font-size:18px; text-decoration:none;">➕</a>
+  <img class="header-icon" id="sheetIcon" src="sheet.png" alt="Sheet" title="Open Sheet">
+  <a href="addcontact.html" class="header-plus">➕</a>
 </header>
 
 <div class="controls" id="appControls" style="display:none;">
@@ -151,9 +152,6 @@
   <label for="greeting">Greeting</label>
   <input type="text" id="greeting">
 
-  <!-- === Sheet icon moved to right of greeting only === -->
-  <img class="header-icon" id="sheetIcon" src="sheet-icon.png" alt="Sheet" title="Open Sheet">
-
   <label for="message">Message</label>
   <textarea id="message" rows="4"></textarea>
 </div>
@@ -161,6 +159,7 @@
 <div id="visitorList"></div>
 <div id="statusLine"></div>
 
+<!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
@@ -174,12 +173,20 @@ let tokenClient = null;
 const userIcon = document.getElementById("userIcon");
 const sheetIcon = document.getElementById("sheetIcon");
 
-function setStatus(msg) { document.getElementById("statusLine").textContent = msg || ""; }
-function showAppUI(show) { document.getElementById("appControls").style.display = show ? "block" : "none"; }
+function setStatus(msg) {
+  document.getElementById("statusLine").textContent = msg || "";
+}
+
+function showAppUI(show) {
+  document.getElementById("appControls").style.display = show ? "block" : "none";
+}
 
 function updateUserIcon(profile) {
-  if (profile && profile.picture) { userIcon.src = profile.picture; }
-  else { userIcon.src = "genuser.jpg"; }
+  if (profile && profile.picture) {
+    userIcon.src = profile.picture;
+  } else {
+    userIcon.src = "genuser.jpg";
+  }
 }
 
 function initTokenClient() {
@@ -187,16 +194,26 @@ function initTokenClient() {
     client_id: GOOGLE_CLIENT_ID,
     scope: "https://www.googleapis.com/auth/spreadsheets.readonly",
     callback: async (tokenResponse) => {
-      if (!tokenResponse || !tokenResponse.access_token) { setStatus("Sign-in failed."); return; }
+      if (!tokenResponse || !tokenResponse.access_token) {
+        setStatus("Sign-in failed.");
+        return;
+      }
       accessToken = tokenResponse.access_token;
       localStorage.setItem("vm_access_token", accessToken);
       showAppUI(true);
+      setStatus("");
 
+      // fetch user info for avatar
       try {
-        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", { headers: { "Authorization": `Bearer ${accessToken}` }});
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { "Authorization": `Bearer ${accessToken}` }
+        });
         const profile = await res.json();
         updateUserIcon(profile);
-      } catch { updateUserIcon(); }
+      } catch (err) {
+        console.error("Failed to fetch user info", err);
+        updateUserIcon();
+      }
 
       loadVisitors();
     }
@@ -217,19 +234,27 @@ userIcon.addEventListener("click", () => {
   }
 });
 
+// restore token if available
 window.addEventListener("DOMContentLoaded", () => {
   const savedToken = localStorage.getItem("vm_access_token");
   if (savedToken) {
     accessToken = savedToken;
     showAppUI(true);
-    fetch("https://www.googleapis.com/oauth2/v3/userinfo", { headers: { "Authorization": `Bearer ${accessToken}` }})
+    setStatus("");
+    fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { "Authorization": `Bearer ${accessToken}` }
+    })
       .then(r => r.json())
       .then(profile => updateUserIcon(profile))
       .catch(() => updateUserIcon());
     loadVisitors();
-  } else { updateUserIcon(); setStatus("Click avatar to sign in."); }
+  } else {
+    updateUserIcon();
+    setStatus("Click avatar to sign in.");
+  }
 });
 
+// position sheet icon click
 sheetIcon.addEventListener("click", () => {
   window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?gid=671174622`, "_blank");
 });
@@ -267,13 +292,13 @@ async function fetchSheetValues() {
 async function loadVisitors() {
   const list = document.getElementById("visitorList");
   if (!accessToken) { list.innerHTML = "Please sign in first."; return; }
+  list.innerHTML = "";
   const [y, m, d] = datePicker.value.split("-").map(Number);
   const selected = new Date(y, m - 1, d);
 
   let rows;
   try { rows = await fetchSheetValues(); } 
   catch { list.innerHTML = "Error loading sheet."; return; }
-  list.innerHTML = "";
   if (!rows.length) { list.innerHTML = "No data found."; return; }
 
   rows.slice(1).forEach(cols => {
