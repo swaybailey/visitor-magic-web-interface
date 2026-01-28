@@ -36,13 +36,16 @@
   }
 
   .header-plus {
-    font-size: 20px;
+    font-size: 18px; /* reduced size slightly */
     margin-left: 16px;
     cursor: pointer;
   }
 
   .controls {
     margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .controls label {
@@ -108,23 +111,19 @@
     color: #444;
   }
 
-  #loginBtn {
+  #userIcon {
     width: 40px;
     height: 40px;
     border-radius: 50%;
     border: 1px solid #ccc;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     cursor: pointer;
+    object-fit: cover;
   }
 
-  #loginBtn img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
+  #sheetIcon {
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
   }
 </style>
 </head>
@@ -134,19 +133,13 @@
 <header>
   <img id="userIcon" class="header-icon" src="genuser.jpg" alt="Login" title="Click to sign in/out">
   <h1>Visitor Magic</h1>
-  <img class="header-icon" id="sheetIcon" src="sheet-icon.png" alt="Sheet" title="Open Sheet">
   <a href="addcontact.html" class="header-plus">➕</a>
 </header>
 
 <div class="controls" id="appControls" style="display:none;">
   <label for="datePicker">Date</label>
   <input type="date" id="datePicker">
-
-  <label for="greeting">Greeting</label>
-  <input type="text" id="greeting">
-
-  <label for="message">Message</label>
-  <textarea id="message" rows="4"></textarea>
+  <img id="sheetIcon" src="sheet-icon.png" alt="Sheet" title="Open Sheet">
 </div>
 
 <div id="visitorList"></div>
@@ -171,7 +164,7 @@ function setStatus(msg) {
 }
 
 function showAppUI(show) {
-  document.getElementById("appControls").style.display = show ? "block" : "none";
+  document.getElementById("appControls").style.display = show ? "flex" : "none";
 }
 
 function updateUserIcon(profile) {
@@ -187,14 +180,10 @@ function initTokenClient() {
     client_id: GOOGLE_CLIENT_ID,
     scope: "https://www.googleapis.com/auth/spreadsheets.readonly",
     callback: async (tokenResponse) => {
-      if (!tokenResponse || !tokenResponse.access_token) {
-        setStatus("Sign-in failed.");
-        return;
-      }
+      if (!tokenResponse || !tokenResponse.access_token) return;
       accessToken = tokenResponse.access_token;
       localStorage.setItem("vm_access_token", accessToken);
       showAppUI(true);
-      setStatus("Loading visitors...");
 
       // fetch user info for avatar
       try {
@@ -203,8 +192,7 @@ function initTokenClient() {
         });
         const profile = await res.json();
         updateUserIcon(profile);
-      } catch (err) {
-        console.error("Failed to fetch user info", err);
+      } catch {
         updateUserIcon();
       }
 
@@ -215,14 +203,12 @@ function initTokenClient() {
 
 userIcon.addEventListener("click", () => {
   if (!accessToken) {
-    // signed out: request token
     if (!tokenClient) initTokenClient();
     tokenClient.requestAccessToken({ prompt: "consent" });
   } else {
-    // signed in: log out
     accessToken = null;
     localStorage.removeItem("vm_access_token");
-    updateUserIcon(); // back to generic icon
+    updateUserIcon();
     showAppUI(false);
     document.getElementById("visitorList").innerHTML = "";
     setStatus("Signed out. Click avatar to sign in.");
@@ -235,7 +221,6 @@ window.addEventListener("DOMContentLoaded", () => {
   if (savedToken) {
     accessToken = savedToken;
     showAppUI(true);
-    setStatus("Loading visitors...");
     fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
       headers: { "Authorization": `Bearer ${accessToken}` }
     })
@@ -249,7 +234,6 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// position sheet icon click
 sheetIcon.addEventListener("click", () => {
   window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?gid=671174622`, "_blank");
 });
@@ -287,7 +271,6 @@ async function fetchSheetValues() {
 async function loadVisitors() {
   const list = document.getElementById("visitorList");
   if (!accessToken) { list.innerHTML = "Please sign in first."; return; }
-  list.innerHTML = "Loading...";
   const [y, m, d] = datePicker.value.split("-").map(Number);
   const selected = new Date(y, m - 1, d);
 
