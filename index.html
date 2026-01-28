@@ -328,9 +328,18 @@ async function loadVisitors() {
   if (!list.children.length) list.innerHTML = "No visitors found for this date";
 }
 </script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(() => console.log('Service Worker registered.'))
+    .catch(err => console.error('Service Worker registration failed:', err));
+}
+</script>
+
 
 </body>
 </html>
+
 
 
 
