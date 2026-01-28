@@ -65,8 +65,9 @@
   }
 
   input[type="text"], textarea {
-    width: 100%;
-    padding: 24px;
+    width: 100%;            /* full width of the controls container */
+    max-width: calc(100% - 24px);  /* subtract the same 12px padding on both sides */
+    box-sizing: border-box; /* include padding in width calculation */
     margin-top: 4px;
     font-size: 16px;
     display: block;
@@ -325,4 +326,5 @@ async function loadVisitors() {
 
 </body>
 </html>
+
 
