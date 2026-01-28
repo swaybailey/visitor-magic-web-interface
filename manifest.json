@@ -1,7 +1,8 @@
 {
+  "id": "/visitor-magic-web-interface/",
   "name": "Visitor Magic",
   "short_name": "VisitorMagic",
-  "start_url": "/visitor-magic-web-interface/",
+  "start_url": "/visitor-magic-web-interface/inde.html",
   "scope": "/visitor-magic-web-interface/",
   "display": "standalone",
   "background_color": "#f5f5f5",
@@ -19,4 +20,5 @@
     }
   ]
 }
+
 
