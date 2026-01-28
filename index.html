@@ -37,11 +37,24 @@
     margin-left: auto;
   }
 
+  #userContainer {
+    display: flex;
+    align-items: center;
+    margin-right: 8px;
+  }
+
   #userIcon {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    margin-right: 8px;
+    cursor: pointer;
+  }
+
+  #loginBtn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #fff;
     cursor: pointer;
   }
 
@@ -111,7 +124,11 @@
 <body>
 
 <header>
-  <img id="userIcon" src="https://www.firstblueridge.org/images/default-user.png" alt="User" />
+  <div id="userContainer">
+    <button id="loginBtn">Login to Google</button>
+    <img id="userIcon" src="" alt="User" style="display:none;" />
+  </div>
+
   <h1>Visitor Magic</h1>
   <a id="sheetIcon" href="https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622" target="_blank">📄</a>
   <a href="addcontact.html" class="header-plus">➕</a>
@@ -139,14 +156,24 @@ const SHEET_RANGE = "Form Responses 1!A:V";
 
 let accessToken = null;
 let tokenClient = null;
+
 const userIcon = document.getElementById("userIcon");
+const loginBtn = document.getElementById("loginBtn");
 
 function showAppUI(show) {
   document.getElementById("appControls").style.display = show ? "block" : "none";
 }
 
-function setUserIcon(imgUrl) {
-  userIcon.src = imgUrl || "https://www.firstblueridge.org/images/default-user.png";
+function updateUserDisplay(signedIn, picture) {
+  if(signedIn){
+    loginBtn.style.display = "none";
+    userIcon.style.display = "block";
+    userIcon.src = picture;
+  } else {
+    loginBtn.style.display = "inline-block";
+    userIcon.style.display = "none";
+    userIcon.src = "";
+  }
 }
 
 function initTokenClient() {
@@ -159,8 +186,8 @@ function initTokenClient() {
       if (!resp || !resp.access_token) return;
       accessToken = resp.access_token;
       localStorage.setItem("vm_access_token", accessToken);
-      showAppUI(true);
       fetchUserProfile();
+      showAppUI(true);
       loadVisitors();
     }
   });
@@ -168,7 +195,6 @@ function initTokenClient() {
   return true;
 }
 
-// Fetch profile info for signed in icon
 async function fetchUserProfile() {
   if (!accessToken) return;
   try {
@@ -176,27 +202,26 @@ async function fetchUserProfile() {
       headers: { "Authorization": `Bearer ${accessToken}` }
     });
     const data = await res.json();
-    setUserIcon(data.picture);
+    updateUserDisplay(true, data.picture);
   } catch(e) {
-    setUserIcon(""); // fallback
+    updateUserDisplay(true, "");
   }
 }
 
-// Click icon to sign in or out
-userIcon.addEventListener("click", () => {
-  if (!accessToken) {
-    if (!tokenClient) initTokenClient();
-    tokenClient.requestAccessToken({ prompt: "consent" });
-  } else {
-    accessToken = null;
-    localStorage.removeItem("vm_access_token");
-    setUserIcon("");
-    showAppUI(false);
-    document.getElementById("visitorList").innerHTML = "";
-  }
+loginBtn.addEventListener("click", () => {
+  if (!tokenClient) initTokenClient();
+  tokenClient.requestAccessToken({ prompt: "consent" });
 });
 
-// Restore token on page load
+userIcon.addEventListener("click", () => {
+  accessToken = null;
+  localStorage.removeItem("vm_access_token");
+  updateUserDisplay(false);
+  showAppUI(false);
+  document.getElementById("visitorList").innerHTML = "";
+});
+
+// Restore token on load
 window.addEventListener("DOMContentLoaded", () => {
   const savedToken = localStorage.getItem("vm_access_token");
   if (savedToken) {
@@ -207,12 +232,12 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-/* ====================== EXISTING HELPERS ====================== */
+/* ========== EXISTING HELPERS ========== */
 function parseSheetDate(str) {if(!str)return null;const m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/);if(!m)return null;return new Date(m[3],m[1]-1,m[2],m[4],m[5],m[6]);}
 function sameDay(d1,d2){return d1.getFullYear()===d2.getFullYear()&&d1.getMonth()===d2.getMonth()&&d1.getDate()===d2.getDate();}
 function formatPhone(phone){const d=(phone||"").replace(/\D/g,"");return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:(phone||"");}
 
-/* ====================== VISITOR LOADING ====================== */
+/* ========== VISITOR LOADING ========== */
 const datePicker = document.getElementById("datePicker");
 const messageInput = document.getElementById("message");
 const greetingInput = document.getElementById("greeting");
