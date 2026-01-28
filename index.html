@@ -173,11 +173,11 @@ function initTokenClient() {
 
 userIconBtn.addEventListener("click", () => {
   if (accessToken) {
-    // Sign out
     accessToken = null;
     localStorage.removeItem("vm_access_token");
     userIconBtn.textContent = "Login";
     userIconBtn.style.backgroundImage = "";
+    userIconBtn.innerHTML = "Login"; // restore text inside circle
     showAppUI(false);
     document.getElementById("visitorList").innerHTML = "";
   } else {
@@ -198,18 +198,18 @@ function fetchUserProfile() {
       userIconBtn.style.backgroundImage = `url(${pic})`;
       userIconBtn.textContent = "";
     } else {
-      userIconBtn.textContent = "User";
-      userIconBtn.style.backgroundImage = "";
+      // fallback to generic human-head icon
+      userIconBtn.style.backgroundImage = "url('https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_placeholder.png')";
+      userIconBtn.textContent = "";
     }
     userIconBtn.title = `Signed in as ${data.name || "User"}`;
     showAppUI(true);
     loadVisitors();
   })
   .catch(() => {
-    userIconBtn.textContent = "User";
+    userIconBtn.textContent = "Login";
     userIconBtn.style.backgroundImage = "";
     showAppUI(true);
-    loadVisitors();
   });
 }
 
