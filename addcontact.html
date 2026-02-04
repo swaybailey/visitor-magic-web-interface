@@ -1,108 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Add Contact</title>
-
-<style>
-body {
-  font-family: system-ui, sans-serif;
-  margin: 0;
-  padding: 16px;
-  background: #f5f5f5;
-}
-
-header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-header h1 {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  margin: 0;
-  font-size: 24px;
-}
-
-.icon-button {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-}
-
-.header-left {
-  margin-right: auto;
-}
-
-.header-right {
-  margin-left: auto;
-}
-
-/* ===== Date Range ===== */
-
-.date-range {
-  display: none;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.date-range.show {
-  display: flex;
-}
-
-.date-range input {
-  flex: 1;
-  padding: 8px;
-  font-size: 16px;
-}
-
-/* ===== Content ===== */
-
-.section-label {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  text-align: center;
-}
-
-.visitor-btn {
-  display: block;
-  width: 70%;
-  padding: 10px;
-  margin: 0 auto 8px;
-  font-size: 16px;
-  background: #47b80f;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Contact</title>
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f5f5f5;
+    }
+    header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    header h1 {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      margin: 0;
+      font-size: 24px;
+    }
+    .icon-button {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .header-left {
+      margin-right: auto;
+    }
+    .header-right {
+      margin-left: auto;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1px solid #ccc;
+      background: white;
+    }
+    .header-right img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    /* ===== Date Range ===== */
+    .date-range {
+      display: none;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .date-range.show {
+      display: flex;
+    }
+    .date-range input {
+      flex: 1;
+      padding: 8px;
+      font-size: 16px;
+    }
+    /* ===== Content ===== */
+    .section-label {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .visitor-btn {
+      display: block;
+      width: 70%;
+      padding: 10px;
+      margin: 0 auto 8px;
+      font-size: 16px;
+      background: #47b80f;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #status {
+      text-align: center;
+      color: #555;
+      font-size: 14px;
+      margin: 8px 0 16px;
+    }
+  </style>
 </head>
-
 <body>
 
 <header>
-  <button
-    class="icon-button header-left"
-    onclick="history.back()"
-    title="Back">
-    ⬅️
-  </button>
-
+  <button class="icon-button header-left" onclick="history.back()" title="Back">⬅️</button>
   <h1>Add Contact</h1>
-
-  <button
-    class="icon-button header-right"
-    id="calendarToggle"
-    title="Select Date Range">
-    📅
+  <button class="icon-button header-right" id="userBtn" title="Sign in / out">
+    <img id="userIcon" src="genuser.jpg" alt="User">
   </button>
 </header>
 
@@ -111,204 +106,228 @@ header h1 {
   <input type="date" id="endDate">
 </div>
 
+<div id="status">Click avatar to sign in</div>
 <div id="label" class="section-label"></div>
-<div id="visitorButtons">Loading...</div>
+<div id="visitorButtons">Please sign in to load visitors</div>
 
 <script>
-/* ================= CONFIG ================= */
+// ────────────────────────────────────────────────
+// CONFIG – same as your main file
+// ────────────────────────────────────────────────
+const GOOGLE_CLIENT_ID = "651012310033-dbj2vvf3evf9aomj577621ddhked2uvn.apps.googleusercontent.com";
+const SPREADSHEET_ID  = "1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ";
+const SHEET_RANGE     = "Form Responses 1!A:V";
 
-const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ/edit?gid=671174622";
+let accessToken = null;
+let tokenClient = null;
 
-/* ================= HELPERS ================= */
+const userIcon = document.getElementById("userIcon");
+const statusEl  = document.getElementById("status");
 
-function csvUrl(url) {
-  const gid = url.match(/gid=(\d+)/)?.[1];
-  return url.replace(
-    /\/edit.*$/,
-    `/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ""}`
-  );
+// ────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────
+function setStatus(msg) {
+  statusEl.textContent = msg || "";
 }
 
-function parseSheetDate(str) {
-  if (!str) return null;
-  const m = str.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})/
-  );
-  if (!m) return null;
-
-  return new Date(
-    m[3], m[1] - 1, m[2],
-    m[4], m[5], m[6]
-  );
+function updateUserIcon(profile) {
+  userIcon.src = profile?.picture || "genuser.jpg";
 }
 
-/* Real CSV parser (handles quoted commas correctly) */
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let cell = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const next = text[i + 1];
-
-    if (ch === '"' && inQuotes && next === '"') {
-      cell += '"';
-      i++;
-      continue;
+function initTokenClient() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: "https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
+    callback: async (tokenResponse) => {
+      if (!tokenResponse?.access_token) {
+        setStatus("Sign-in failed");
+        return;
+      }
+      accessToken = tokenResponse.access_token;
+      localStorage.setItem("vm_access_token", accessToken);
+      setStatus("");
+      try {
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        const profile = await res.json();
+        updateUserIcon(profile);
+      } catch {
+        updateUserIcon();
+      }
+      loadVisitors();
     }
+  });
+}
 
-    if (ch === '"') {
-      inQuotes = !inQuotes;
-      continue;
-    }
-
-    if (ch === "," && !inQuotes) {
-      row.push(cell.trim());
-      cell = "";
-      continue;
-    }
-
-    if ((ch === "\n" || ch === "\r") && !inQuotes) {
-      if (ch === "\r" && next === "\n") i++;
-      row.push(cell.trim());
-      cell = "";
-      if (row.length > 1) rows.push(row);
-      row = [];
-      continue;
-    }
-
-    cell += ch;
+// ────────────────────────────────────────────────
+// Auth flow
+// ────────────────────────────────────────────────
+document.getElementById("userBtn").addEventListener("click", () => {
+  if (!accessToken) {
+    if (!tokenClient) initTokenClient();
+    tokenClient.requestAccessToken({ prompt: "consent" });
+  } else {
+    accessToken = null;
+    localStorage.removeItem("vm_access_token");
+    updateUserIcon();
+    setStatus("Signed out. Click avatar to sign in.");
+    document.getElementById("visitorButtons").innerHTML = "Please sign in to load visitors";
   }
+});
 
-  // last cell
-  row.push(cell.trim());
-  if (row.length > 1) rows.push(row);
+// Restore session
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("vm_access_token");
+  if (saved) {
+    accessToken = saved;
+    setStatus("Loading...");
+    fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    })
+      .then(r => r.json())
+      .then(updateUserIcon)
+      .catch(updateUserIcon);
+    loadVisitors();
+  } else {
+    updateUserIcon();
+  }
+});
 
-  return rows;
+// ────────────────────────────────────────────────
+// Sheet fetching (same as main app)
+// ────────────────────────────────────────────────
+async function fetchSheetValues() {
+  if (!accessToken) throw new Error("Not signed in");
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_RANGE)}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  const data = await res.json();
+  return data.values || [];
+}
+
+// ────────────────────────────────────────────────
+// Date range + visitor loading
+// ────────────────────────────────────────────────
+const startInput = document.getElementById("startDate");
+const endInput   = document.getElementById("endDate");
+const label      = document.getElementById("label");
+const buttonsDiv = document.getElementById("visitorButtons");
+const dateRange  = document.getElementById("dateRange");
+
+document.getElementById("calendarToggle").addEventListener("click", () => {
+  dateRange.classList.toggle("show");
+});
+
+function initDates() {
+  const end   = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 30);
+  startInput.value = start.toISOString().split("T")[0];
+  endInput.value   = end.toISOString().split("T")[0];
 }
 
 function formatDate(d) {
-  return d.toLocaleDateString();
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-/* ================= MAIN ================= */
-
-const startInput = document.getElementById("startDate");
-const endInput = document.getElementById("endDate");
-const label = document.getElementById("label");
-const dateRange = document.getElementById("dateRange");
-
 initDates();
-loadVisitors();
-
 startInput.addEventListener("change", loadVisitors);
 endInput.addEventListener("change", loadVisitors);
 
-/* Toggle date picker */
-document.getElementById("calendarToggle")
-  .addEventListener("click", () => {
-    dateRange.classList.toggle("show");
-  });
-
-function initDates() {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - 30);
-
-  startInput.value = start.toISOString().split("T")[0];
-  endInput.value = end.toISOString().split("T")[0];
-}
-
 async function loadVisitors() {
-  const container = document.getElementById("visitorButtons");
-  container.innerHTML = "Loading...";
+  if (!accessToken) {
+    buttonsDiv.innerHTML = "Please sign in to load visitors";
+    return;
+  }
 
+  buttonsDiv.innerHTML = "Loading...";
   const start = new Date(startInput.value);
-  const end = new Date(endInput.value);
-  end.setHours(23, 59, 59, 999);
+  const end   = new Date(endInput.value);
+  end.setHours(23,59,59,999);
 
-  label.textContent =
-    `Visitors from ${formatDate(start)} to ${formatDate(end)}`;
+  label.textContent = `Visitors from ${formatDate(start)} to ${formatDate(end)}`;
 
-  const res = await fetch(csvUrl(SHEET_URL));
-  const rows = parseCsv(await res.text());
+  let rows;
+  try {
+    rows = await fetchSheetValues();
+  } catch (err) {
+    buttonsDiv.innerHTML = "Error loading data";
+    console.error(err);
+    return;
+  }
 
-  container.innerHTML = "";
+  buttonsDiv.innerHTML = "";
+  let count = 0;
 
   rows.slice(1).forEach(cols => {
-    if (cols.length < 3) return;
+    if (cols.length < 12) return;
+    const visitDate = new Date(cols[0]);
+    if (isNaN(visitDate) || visitDate < start || visitDate > end) return;
 
-    const visitDate = parseSheetDate(cols[0]);
-    if (!visitDate || visitDate < start || visitDate > end) return;
-
-    const first = cols[1];
-    const last = cols[2];
+    const first   = cols[1]?.trim() || "";
+    const last    = cols[2]?.trim() || "";
     if (!first || !last) return;
 
-    // Phone is Column D => index 3
-    const phone = (cols[3] || "").trim();
+    const phone   = (cols[3] || "").trim();
+    const email   = (cols[5] || "").trim();
+    const address = [cols[8], cols[9], cols[10]].filter(Boolean).join(", ").trim();
 
-    // Children names
-    let childrenNames = [];
-    if (cols[11]?.toLowerCase() === "yes") {
+    const hasChildren = (cols[11] || "").toLowerCase() === "yes";
+    let children = [];
+    if (hasChildren) {
       for (let i = 12; i < cols.length; i += 2) {
-        if (cols[i]) childrenNames.push(cols[i]);
+        const name = cols[i]?.trim();
+        const age  = cols[i+1]?.trim();
+        if (name) children.push(age ? `${name} (${age})` : name);
       }
     }
 
-    // Only take date part, discard time
-    const visitDateOnly = cols[0].split(" ")[0];
+    const visitDateStr = cols[0].split(" ")[0]; // keep original string format
 
     const noteLines = [
-      `Date of first visit: ${visitDateOnly}`,
-      ...(childrenNames.length ? ["Children: " + childrenNames.join(", ")] : []),
+      `Date of first visit: ${visitDateStr}`,
+      ...(children.length ? [`Children: ${children.join(", ")}`] : []),
       "Added automatically from VisitorMagicWeb"
     ];
     const note = noteLines.join("\\n");
 
-    // Address
-    const address = [cols[8], cols[9], cols[10]].filter(Boolean).join(", ");
-
-    const email = cols[5] || "";
-
     const btn = document.createElement("button");
     btn.className = "visitor-btn";
     btn.textContent = `${first} ${last}`;
-    btn.addEventListener("click", () => {
-      const vcf = [
+    btn.onclick = () => {
+      const vcfLines = [
         "BEGIN:VCARD",
         "VERSION:3.0",
         `N:${last};${first};;;`,
         `FN:${first} ${last}`,
-        phone ? `TEL;TYPE=CELL:${phone}` : "",
+        phone   ? `TEL;TYPE=CELL:${phone}` : "",
         address ? `ADR:;;${address};;;;` : "",
-        email ? `EMAIL:${email}` : "",
+        email   ? `EMAIL:${email}` : "",
         `NOTE:${note}`,
         "END:VCARD"
       ].filter(Boolean).join("\n");
 
-      const blob = new Blob([vcf], { type: "text/vcard" });
+      const blob = new Blob([vcfLines], { type: "text/vcard" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `${first}_${last}.vcf`;
-      document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    });
+    };
 
-    container.appendChild(btn);
+    buttonsDiv.appendChild(btn);
+    count++;
   });
 
-  if (!container.children.length) {
-    container.innerHTML = "No visitors found for this date range";
+  if (count === 0) {
+    buttonsDiv.innerHTML = "No visitors found in this date range";
   }
 }
 </script>
-
 </body>
 </html>
