@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Add Contact</title>
-  <!-- Google Identity Services -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -35,20 +33,6 @@
     }
     .header-left {
       margin-right: auto;
-    }
-    .header-right {
-      margin-left: auto;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      overflow: hidden;
-      border: 1px solid #ccc;
-      background: white;
-    }
-    .header-right img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
     }
     /* ===== Date Range ===== */
     .date-range {
@@ -85,7 +69,7 @@
     }
     #status {
       text-align: center;
-      color: #555;
+      color: #d32f2f;
       font-size: 14px;
       margin: 8px 0 16px;
     }
@@ -96,9 +80,6 @@
 <header>
   <button class="icon-button header-left" onclick="history.back()" title="Back">⬅️</button>
   <h1>Add Contact</h1>
-  <button class="icon-button header-right" id="userBtn" title="Sign in / out">
-    <img id="userIcon" src="genuser.jpg" alt="User">
-  </button>
 </header>
 
 <div id="dateRange" class="date-range">
@@ -106,100 +87,24 @@
   <input type="date" id="endDate">
 </div>
 
-<div id="status">Click avatar to sign in</div>
+<div id="status"></div>
 <div id="label" class="section-label"></div>
-<div id="visitorButtons">Please sign in to load visitors</div>
+<div id="visitorButtons">Loading...</div>
 
 <script>
 // ────────────────────────────────────────────────
-// CONFIG – same as your main file
+// CONFIG – same as main file
 // ────────────────────────────────────────────────
-const GOOGLE_CLIENT_ID = "651012310033-dbj2vvf3evf9aomj577621ddhked2uvn.apps.googleusercontent.com";
 const SPREADSHEET_ID  = "1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ";
 const SHEET_RANGE     = "Form Responses 1!A:V";
 
-let accessToken = null;
-let tokenClient = null;
-
-const userIcon = document.getElementById("userIcon");
-const statusEl  = document.getElementById("status");
-
-// ────────────────────────────────────────────────
-// Helpers
-// ────────────────────────────────────────────────
-function setStatus(msg) {
-  statusEl.textContent = msg || "";
-}
-
-function updateUserIcon(profile) {
-  userIcon.src = profile?.picture || "genuser.jpg";
-}
-
-function initTokenClient() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope: "https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
-    callback: async (tokenResponse) => {
-      if (!tokenResponse?.access_token) {
-        setStatus("Sign-in failed");
-        return;
-      }
-      accessToken = tokenResponse.access_token;
-      localStorage.setItem("vm_access_token", accessToken);
-      setStatus("");
-      try {
-        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        const profile = await res.json();
-        updateUserIcon(profile);
-      } catch {
-        updateUserIcon();
-      }
-      loadVisitors();
-    }
-  });
-}
-
-// ────────────────────────────────────────────────
-// Auth flow
-// ────────────────────────────────────────────────
-document.getElementById("userBtn").addEventListener("click", () => {
-  if (!accessToken) {
-    if (!tokenClient) initTokenClient();
-    tokenClient.requestAccessToken({ prompt: "consent" });
-  } else {
-    accessToken = null;
-    localStorage.removeItem("vm_access_token");
-    updateUserIcon();
-    setStatus("Signed out. Click avatar to sign in.");
-    document.getElementById("visitorButtons").innerHTML = "Please sign in to load visitors";
-  }
-});
-
-// Restore session
-window.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem("vm_access_token");
-  if (saved) {
-    accessToken = saved;
-    setStatus("Loading...");
-    fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    })
-      .then(r => r.json())
-      .then(updateUserIcon)
-      .catch(updateUserIcon);
-    loadVisitors();
-  } else {
-    updateUserIcon();
-  }
-});
+let accessToken = localStorage.getItem("vm_access_token");
 
 // ────────────────────────────────────────────────
 // Sheet fetching (same as main app)
 // ────────────────────────────────────────────────
 async function fetchSheetValues() {
-  if (!accessToken) throw new Error("Not signed in");
+  if (!accessToken) throw new Error("No access token found. Please sign in from the main page first.");
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_RANGE)}`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` }
@@ -217,8 +122,9 @@ const endInput   = document.getElementById("endDate");
 const label      = document.getElementById("label");
 const buttonsDiv = document.getElementById("visitorButtons");
 const dateRange  = document.getElementById("dateRange");
+const statusEl   = document.getElementById("status");
 
-document.getElementById("calendarToggle").addEventListener("click", () => {
+document.getElementById("calendarToggle")?.addEventListener("click", () => {
   dateRange.classList.toggle("show");
 });
 
@@ -231,7 +137,8 @@ function initDates() {
 }
 
 function formatDate(d) {
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  if (!(d instanceof Date) || isNaN(d)) return "—";
+  return d.toLocaleDateString();  // Uses browser locale – same simple format as your original
 }
 
 initDates();
@@ -240,13 +147,21 @@ endInput.addEventListener("change", loadVisitors);
 
 async function loadVisitors() {
   if (!accessToken) {
-    buttonsDiv.innerHTML = "Please sign in to load visitors";
+    statusEl.textContent = "No sign-in found. Please go back to the main page and sign in first.";
+    buttonsDiv.innerHTML = "";
     return;
   }
 
+  statusEl.textContent = "";
   buttonsDiv.innerHTML = "Loading...";
+
   const start = new Date(startInput.value);
   const end   = new Date(endInput.value);
+  if (isNaN(start) || isNaN(end)) {
+    label.textContent = "Invalid date range selected";
+    buttonsDiv.innerHTML = "";
+    return;
+  }
   end.setHours(23,59,59,999);
 
   label.textContent = `Visitors from ${formatDate(start)} to ${formatDate(end)}`;
@@ -255,7 +170,7 @@ async function loadVisitors() {
   try {
     rows = await fetchSheetValues();
   } catch (err) {
-    buttonsDiv.innerHTML = "Error loading data";
+    buttonsDiv.innerHTML = "Error loading data from sheet";
     console.error(err);
     return;
   }
@@ -286,7 +201,7 @@ async function loadVisitors() {
       }
     }
 
-    const visitDateStr = cols[0].split(" ")[0]; // keep original string format
+    const visitDateStr = cols[0].split(" ")[0] || formatDate(visitDate);
 
     const noteLines = [
       `Date of first visit: ${visitDateStr}`,
@@ -328,6 +243,8 @@ async function loadVisitors() {
     buttonsDiv.innerHTML = "No visitors found in this date range";
   }
 }
+
+loadVisitors();  // initial load
 </script>
 </body>
 </html>
