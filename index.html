@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  
+ 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#47b80f">
-
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Visitor Magic</title>
-
 <style>
   body {
     font-family: system-ui, sans-serif;
@@ -16,20 +14,17 @@
     padding: 16px;
     background: #f5f5f5;
   }
-
   header {
     display: flex;
     align-items: center;
     margin-bottom: 16px;
   }
-
   header h1 {
     flex: 1;
     margin: 0;
     font-size: 24px;
     text-align: center;
   }
-
   .header-icon {
     width: 32px;
     height: 32px;
@@ -38,46 +33,39 @@
     border-radius: 50%;
     object-fit: cover;
   }
-
   .header-plus {
     font-size: 18px;
     margin-left: 16px;
     cursor: pointer;
     text-decoration: none;
   }
-
   .controls {
     margin-bottom: 16px;
   }
-
   .controls label {
     font-weight: bold;
     display: block;
     margin-top: 8px;
   }
-
   input[type="date"] {
     width: 138px;
     padding: 6px;
     font-size: 16px;
   }
-
   input#greeting {
     width: 150px; /* smaller box for single word */
     padding: 6px;
     font-size: 16px;
   }
-
   input[type="text"], textarea {
     padding: 12px;
     margin-top: 4px;
     margin-bottom: 8px;
     font-size: 16px;
     display: block;
-    width: 100%;            /* make the box full width of parent */
+    width: 100%; /* make the box full width of parent */
     box-sizing: border-box; /* include padding in width calculation */
   }
-
   .visitor {
     background: white;
     padding: 12px;
@@ -87,17 +75,14 @@
     justify-content: space-between;
     align-items: center;
   }
-
   .visitor-info {
     flex: 1;
   }
-
   .children {
     color: red;
     font-size: 13px;
     margin-top: 4px;
   }
-
   .sms-enabled {
     background: #47b80f;
     color: white;
@@ -106,7 +91,6 @@
     cursor: pointer;
     padding: 8px 10px;
   }
-
   .sms-disabled {
     background: #ccc;
     color: #666;
@@ -114,13 +98,11 @@
     border-radius: 4px;
     padding: 8px 10px;
   }
-
   #statusLine {
     margin-top: 10px;
     font-size: 14px;
     color: #444;
   }
-
   #loginBtn {
     width: 40px;
     height: 40px;
@@ -132,7 +114,6 @@
     justify-content: center;
     cursor: pointer;
   }
-
   #loginBtn img {
     width: 100%;
     height: 100%;
@@ -141,52 +122,39 @@
   }
 </style>
 </head>
-
 <body>
-
 <header>
   <img id="userIcon" class="header-icon" src="genuser.jpg" alt="Login" title="Click to sign in/out">
   <h1>Visitor Magic</h1>
   <img class="header-icon" id="sheetIcon" src="sheet.png" alt="Sheet" title="Open Sheet">
   <a href="addcontact.html" class="header-plus">➕</a>
 </header>
-
 <div class="controls" id="appControls" style="display:none;">
   <label for="datePicker">Date</label>
   <input type="date" id="datePicker">
-
   <label for="greeting">Greeting</label>
   <input type="text" id="greeting">
-
   <label for="message">Message</label>
   <textarea id="message" rows="4"></textarea>
 </div>
-
 <div id="visitorList"></div>
 <div id="statusLine"></div>
-
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-
 <script>
 const GOOGLE_CLIENT_ID = "651012310033-dbj2vvf3evf9aomj577621ddhked2uvn.apps.googleusercontent.com";
 const SPREADSHEET_ID = "1HRd1uKlvqqRveJN7SCdYh9IOu8cU0ygRaMYEG3XL6eQ";
 const SHEET_RANGE = "Form Responses 1!A:V";
-
 let accessToken = null;
 let tokenClient = null;
-
 const userIcon = document.getElementById("userIcon");
 const sheetIcon = document.getElementById("sheetIcon");
-
 function setStatus(msg) {
   document.getElementById("statusLine").textContent = msg || "";
 }
-
 function showAppUI(show) {
   document.getElementById("appControls").style.display = show ? "block" : "none";
 }
-
 function updateUserIcon(profile) {
   if (profile && profile.picture) {
     userIcon.src = profile.picture;
@@ -194,7 +162,6 @@ function updateUserIcon(profile) {
     userIcon.src = "genuser.jpg";
   }
 }
-
 function initTokenClient() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
@@ -208,7 +175,6 @@ function initTokenClient() {
       localStorage.setItem("vm_access_token", accessToken);
       showAppUI(true);
       setStatus("");
-
       // fetch user info for avatar
       try {
         const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
@@ -220,16 +186,14 @@ function initTokenClient() {
         console.error("Failed to fetch user info", err);
         updateUserIcon();
       }
-
       loadVisitors();
     }
   });
 }
-
 userIcon.addEventListener("click", () => {
   if (!accessToken) {
     if (!tokenClient) initTokenClient();
-    tokenClient.requestAccessToken({ prompt: "consent" });
+    tokenClient.requestAccessToken({ prompt: "" });  // ← Changed: empty string to avoid forcing consent screen every time
   } else {
     accessToken = null;
     localStorage.removeItem("vm_access_token");
@@ -239,7 +203,6 @@ userIcon.addEventListener("click", () => {
     setStatus("Signed out. Click avatar to sign in.");
   }
 });
-
 // restore token if available
 window.addEventListener("DOMContentLoaded", () => {
   const savedToken = localStorage.getItem("vm_access_token");
@@ -259,12 +222,10 @@ window.addEventListener("DOMContentLoaded", () => {
     setStatus("Click avatar to sign in.");
   }
 });
-
 // position sheet icon click
 sheetIcon.addEventListener("click", () => {
   window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?gid=671174622`, "_blank");
 });
-
 /* ===================== Visitors logic ===================== */
 const datePicker = document.getElementById("datePicker");
 const messageInput = document.getElementById("message");
@@ -275,7 +236,6 @@ greetingInput.value = localStorage.getItem("vm_greeting") || DEFAULT_GREETING;
 messageInput.value = localStorage.getItem("vm_message") || DEFAULT_MESSAGE;
 messageInput.addEventListener("input", () => localStorage.setItem("vm_message", messageInput.value));
 greetingInput.addEventListener("input", () => localStorage.setItem("vm_greeting", greetingInput.value));
-
 window.addEventListener("DOMContentLoaded", () => {
   const today = new Date();
   datePicker.value =
@@ -283,9 +243,7 @@ window.addEventListener("DOMContentLoaded", () => {
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
 });
-
 datePicker.addEventListener("change", () => { if (accessToken) loadVisitors(); });
-
 async function fetchSheetValues() {
   if (!accessToken) throw new Error("Not signed in.");
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_RANGE)}`;
@@ -294,31 +252,26 @@ async function fetchSheetValues() {
   const data = await res.json();
   return data.values || [];
 }
-
 async function loadVisitors() {
   const list = document.getElementById("visitorList");
   if (!accessToken) { list.innerHTML = "Please sign in first."; return; }
   list.innerHTML = "";
   const [y, m, d] = datePicker.value.split("-").map(Number);
   const selected = new Date(y, m - 1, d);
-
   let rows;
-  try { rows = await fetchSheetValues(); } 
+  try { rows = await fetchSheetValues(); }
   catch { list.innerHTML = "Error loading sheet."; return; }
   if (!rows.length) { list.innerHTML = "No data found."; return; }
-
   rows.slice(1).forEach(cols => {
     if (!cols || cols.length < 12) return;
     const visitDate = new Date(cols[0]);
     if (!visitDate || visitDate.getFullYear()!==selected.getFullYear() || visitDate.getMonth()!==selected.getMonth() || visitDate.getDate()!==selected.getDate()) return;
     const first = cols[1] || "", last = cols[2] || "", phone = cols[3] || "", decade = cols[7] || "";
     const smsAllowed = (cols[4]||"").toLowerCase()!=="no";
-
     const children = [];
     if ((cols[11]||"").toLowerCase()==="yes") {
       for (let i=12;i<cols.length;i+=2) if(cols[i] && cols[i+1]) children.push(`${cols[i]} (${cols[i+1]})`);
     }
-
     const div = document.createElement("div"); div.className="visitor";
     const info = document.createElement("div"); info.className="visitor-info";
     info.innerHTML=`<strong>${first} ${last}</strong> <span style="font-size:12px">(${decade})</span><br>${phone}${children.length?`<div class="children">Children: ${children.join(", ")}</div>`:""}<div class="children" style="color:green;">${cols[9]||""}, ${cols[10]||""}</div>`;
@@ -335,20 +288,5 @@ if ('serviceWorker' in navigator) {
     .catch(err => console.error('Service Worker registration failed:', err));
 }
 </script>
-
-
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
