@@ -137,7 +137,17 @@ function formatDate(d) {
   return d.toLocaleDateString();  
 }
 
-// No auto-init of dates — leave inputs empty so user can pick any range
+function setDefaultDates() {
+  const end   = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 30);
+
+  startInput.value = start.toISOString().split("T")[0];
+  endInput.value   = end.toISOString().split("T")[0];
+}
+
+// Set defaults on load
+setDefaultDates();
 
 startInput.addEventListener("change", loadVisitors);
 endInput.addEventListener("change", loadVisitors);
@@ -251,7 +261,7 @@ async function loadVisitors() {
   }
 }
 
-// Initial load — will prompt for dates since none are pre-filled
+// Initial load with defaults
 loadVisitors();
 </script>
 </body>
