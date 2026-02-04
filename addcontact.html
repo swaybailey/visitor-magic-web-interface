@@ -34,6 +34,9 @@
     .header-left {
       margin-right: auto;
     }
+    .header-right {
+      margin-left: auto;
+    }
     /* ===== Date Range ===== */
     .date-range {
       display: none;
@@ -80,6 +83,7 @@
 <header>
   <button class="icon-button header-left" onclick="history.back()" title="Back">⬅️</button>
   <h1>Add Contact</h1>
+  <button class="icon-button header-right" id="calendarToggle" title="Select Date Range">📅</button>
 </header>
 
 <div id="dateRange" class="date-range">
@@ -124,24 +128,17 @@ const buttonsDiv = document.getElementById("visitorButtons");
 const dateRange  = document.getElementById("dateRange");
 const statusEl   = document.getElementById("status");
 
-document.getElementById("calendarToggle")?.addEventListener("click", () => {
+document.getElementById("calendarToggle").addEventListener("click", () => {
   dateRange.classList.toggle("show");
 });
 
-function initDates() {
-  const end   = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - 30);
-  startInput.value = start.toISOString().split("T")[0];
-  endInput.value   = end.toISOString().split("T")[0];
-}
-
 function formatDate(d) {
   if (!(d instanceof Date) || isNaN(d)) return "—";
-  return d.toLocaleDateString();  // Uses browser locale – same simple format as your original
+  return d.toLocaleDateString();  
 }
 
-initDates();
+// No auto-init of dates — leave inputs empty so user can pick any range
+
 startInput.addEventListener("change", loadVisitors);
 endInput.addEventListener("change", loadVisitors);
 
@@ -153,10 +150,18 @@ async function loadVisitors() {
   }
 
   statusEl.textContent = "";
-  buttonsDiv.innerHTML = "Loading...";
 
-  const start = new Date(startInput.value);
-  const end   = new Date(endInput.value);
+  const startVal = startInput.value;
+  const endVal   = endInput.value;
+
+  if (!startVal || !endVal) {
+    label.textContent = "Please select a start and end date";
+    buttonsDiv.innerHTML = "";
+    return;
+  }
+
+  const start = new Date(startVal);
+  const end   = new Date(endVal);
   if (isNaN(start) || isNaN(end)) {
     label.textContent = "Invalid date range selected";
     buttonsDiv.innerHTML = "";
@@ -165,6 +170,8 @@ async function loadVisitors() {
   end.setHours(23,59,59,999);
 
   label.textContent = `Visitors from ${formatDate(start)} to ${formatDate(end)}`;
+
+  buttonsDiv.innerHTML = "Loading...";
 
   let rows;
   try {
@@ -244,7 +251,8 @@ async function loadVisitors() {
   }
 }
 
-loadVisitors();  // initial load
+// Initial load — will prompt for dates since none are pre-filled
+loadVisitors();
 </script>
 </body>
 </html>
